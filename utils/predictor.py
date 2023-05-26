@@ -4,13 +4,13 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+# Modified slightly for torch.Tensor IO, batched operations in fine-tuning by Hyeonbeen Lee, 27th May 2023.
+# Modification includes type casting and dimension handlings only.
+
 import numpy as np
 import torch
-
 from segment_anything.modeling import Sam
-
 from typing import Optional, Tuple
-
 from segment_anything.utils.transforms import ResizeLongestSide
 
 
@@ -56,7 +56,8 @@ class SamPredictor_mod:
         # Transform the image to the form expected by the model
         input_image = self.transform.apply_image(image)
         input_image_torch = torch.as_tensor(input_image, device=self.device)
-        input_image_torch = input_image_torch.permute(2, 0, 1).contiguous()[None, :, :, :]
+        input_image_torch = input_image_torch.permute(
+            2, 0, 1).contiguous()[None, :, :, :]
 
         self.set_torch_image(input_image_torch, image.shape[:2])
 
@@ -131,7 +132,8 @@ class SamPredictor_mod:
             a subsequent iteration as mask input.
         """
         if not self.is_image_set:
-            raise RuntimeError("An image must be set with .set_image(...) before mask prediction.")
+            raise RuntimeError(
+                "An image must be set with .set_image(...) before mask prediction.")
 
         # Transform input prompts
         coords_torch, labels_torch, box_torch, mask_input_torch = None, None, None, None
@@ -139,16 +141,22 @@ class SamPredictor_mod:
             assert (
                 point_labels is not None
             ), "point_labels must be supplied if point_coords is supplied."
-            point_coords = self.transform.apply_coords(point_coords, self.original_size)
-            coords_torch = torch.as_tensor(point_coords, dtype=torch.float, device=self.device)
-            labels_torch = torch.as_tensor(point_labels, dtype=torch.int, device=self.device)
-            coords_torch, labels_torch = coords_torch[None, :, :], labels_torch[None, :]
+            point_coords = self.transform.apply_coords(
+                point_coords, self.original_size)
+            coords_torch = torch.as_tensor(
+                point_coords, dtype=torch.float, device=self.device)
+            labels_torch = torch.as_tensor(
+                point_labels, dtype=torch.int, device=self.device)
+            coords_torch, labels_torch = coords_torch[None,
+                                                      :, :], labels_torch[None, :]
         if box is not None:
             box = self.transform.apply_boxes(box, self.original_size)
-            box_torch = torch.as_tensor(box, dtype=torch.float, device=self.device)
+            box_torch = torch.as_tensor(
+                box, dtype=torch.float, device=self.device)
             box_torch = box_torch[None, :]
         if mask_input is not None:
-            mask_input_torch = torch.as_tensor(mask_input, dtype=torch.float, device=self.device)
+            mask_input_torch = torch.as_tensor(
+                mask_input, dtype=torch.float, device=self.device)
             mask_input_torch = mask_input_torch[None, :, :, :]
 
         masks, iou_predictions, low_res_masks = self.predict_torch(
@@ -210,7 +218,8 @@ class SamPredictor_mod:
             a subsequent iteration as mask input.
         """
         if not self.is_image_set:
-            raise RuntimeError("An image must be set with .set_image(...) before mask prediction.")
+            raise RuntimeError(
+                "An image must be set with .set_image(...) before mask prediction.")
 
         if point_coords is not None:
             points = (point_coords, point_labels)
@@ -219,11 +228,11 @@ class SamPredictor_mod:
 
         # Embed prompts
         with torch.no_grad():
-          sparse_embeddings, dense_embeddings = self.model.prompt_encoder(
-              points=points,
-              boxes=boxes,
-              masks=mask_input,
-          )
+            sparse_embeddings, dense_embeddings = self.model.prompt_encoder(
+                points=points,
+                boxes=boxes,
+                masks=mask_input,
+            )
 
         # Predict masks
         low_res_masks, iou_predictions = self.model.mask_decoder(
@@ -235,7 +244,8 @@ class SamPredictor_mod:
         )
 
         # Upscale the masks to the original image resolution
-        masks = self.model.postprocess_masks(low_res_masks, self.input_size, self.original_size)
+        masks = self.model.postprocess_masks(
+            low_res_masks, self.input_size, self.original_size)
 
         if not return_logits:
             masks = masks > self.model.mask_threshold

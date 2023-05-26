@@ -1,5 +1,5 @@
 from segment_anything import sam_model_registry
-from predictor import SamPredictor_mod
+from utils.predictor import SamPredictor_mod
 import cv2
 import numpy as np
 import torch
@@ -17,8 +17,8 @@ def loadmask(path):
     return mask
 
 # load img and mask label
-img=loadimg('images/train/2008_000008.jpg')
-mask_label=loadmask('images/train/2008_000008-person-luarm.png')
+img = loadimg('images/train/2010_006079.jpg')  # NHWC
+mask_label = loadmask('images/train/2010_006079-person-hair.png')  # NHW
 
 # make prompt from mask label
 rng = np.random.default_rng()
@@ -36,8 +36,8 @@ sam.image_encoder.eval()  # ViT-H image encoder (heavyweight)
 sam.prompt_encoder.eval()  # SAM prompt encoder
 sam.mask_decoder.train()
 predictor = SamPredictor_mod(sam)
-optimizer = torch.optim.RAdam(sam.mask_decoder.parameters(), lr=1e-4)
-loss_fn = torch.nn.MSELoss()
+# optimizer = torch.optim.RAdam(sam.mask_decoder.parameters(), lr=1e-4)
+# loss_fn = torch.nn.MSELoss()
 
 # forward
 predictor.set_image(img)
@@ -50,10 +50,11 @@ for i in range(2):
     for j in range(2):
         ax[i, j].imshow(img)
         ax[i, j].plot(prompt_point[0, 0],
-                      prompt_point[0, 1], marker='*', ms=30, mec='white',mfc='green')
-ax[0, 0].imshow(mask_label, alpha=0.5)
-ax[0, 1].imshow(masks[0], alpha=0.5)
-ax[1, 0].imshow(masks[1], alpha=0.5)
-ax[1, 1].imshow(masks[2], alpha=0.5)
+                      prompt_point[0, 1], marker='*', ms=12, mec='white',mfc='green')
+alpha=0.5
+ax[0, 0].imshow(mask_label, alpha=alpha)
+ax[0, 1].imshow(masks[0], alpha=alpha)
+ax[1, 0].imshow(masks[1], alpha=alpha)
+ax[1, 1].imshow(masks[2], alpha=alpha)
 fig.tight_layout()
-fig.savefig('testing.png', dpi=200)
+fig.savefig('test_SamPredictor.png', dpi=200)
