@@ -1,10 +1,12 @@
 from xml.etree.ElementTree import parse
 from scipy.io import loadmat
 from copy import deepcopy
+import cv2
 import glob
 import os
 import shutil
 import matplotlib.pyplot as plt
+
 
 
 def xml_parse():
@@ -22,15 +24,24 @@ def xml_parse():
 
 
 def loadanno(path):
+    trains=open('data/trainval/VOCdevkit/VOC2010/ImageSets/Main/train.txt')
+    vals=open('data/trainval/VOCdevkit/VOC2010/ImageSets/Main/val.txt')
+    trains=[f.replace('\n','') for f in trains.readlines()]
+    vals=[f.replace('\n','') for f in vals.readlines()]
+    
+    
     file = loadmat(path)['anno']
     # file level
     name_file = file[0][0][0].item()
     data_file = file[0][0][1]
+    if name_file in trains:dsettype='train'
+    elif name_file in vals:dsettype='val'
+    else:dsettype='none'
 
     # cls level
     name_cls = data_file[0][0][0].item()  # person
     if name_cls != 'person':
-        return None
+        return None # cls: person only
     idx_cls = data_file[0][0][1].item()
     mask_cls = data_file[0][0][2]
     data_cls = data_file[0][0][3]
@@ -48,12 +59,13 @@ def loadanno(path):
         if 'name' in k and 'cls' in k:
             print(f"{k}: {vars[k]}")
     print()
-
+    
     # copy original image
-    os.makedirs('images', exist_ok=True)
+    os.makedirs(f'images/{dsettype}', exist_ok=True)
     origin="data/trainval/VOCdevkit/VOC2010/JPEGImages"
     destination="images"
-    shutil.copyfile(f"{origin}/{name_file}.jpg",f"{destination}/{name_file}.jpg")
+    shutil.copyfile(f"{origin}/{name_file}.jpg",f"{destination}/{dsettype}/{name_file}.jpg")
+    
     
     # visualize cls/subcls and save
     masks_to_show = [mask_cls]
@@ -63,14 +75,9 @@ def loadanno(path):
     masks_keys = masks_keys + \
         [f"{name_cls}-{n}" for n in name_subcls] if 'name_subcls' in vars.keys() else masks_keys
     for j, mask in enumerate(masks_to_show):
-        fig, ax = plt.subplots(1, 1, figsize=(5, 5))
-        ax.imshow(mask)
-        fig.tight_layout()
         name_image = f"{name_file}-{masks_keys[j]}"
-        fig.savefig(f"images/{name_image}.png", dpi=200)
-        plt.close(fig)
-
-
+        cv2.imwrite(f"{destination}/{dsettype}/{name_image}.png", mask*255)
+    
 def process():
     annotation_files = glob.glob('data/annotations/Annotations_Part/*.mat')
     import multiprocessing
