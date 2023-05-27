@@ -8,3 +8,6 @@ tar xvzf FILENAME -C data/test
 
 Download PASCAL-Part annotation dataset from here: http://roozbehm.info/pascal-parts/pascal-parts.html  
 tar xvzf FILENAME -C data/annotations  
+
+
+Coded based on https://github.com/facebookresearch/segment-anything with minimal changes
