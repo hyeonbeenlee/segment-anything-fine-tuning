@@ -19,7 +19,6 @@ sam = sam_model_registry['vit_h'](
 sam.image_encoder.eval()  # ViT-H image encoder (heavyweight)
 sam.prompt_encoder.eval()  # SAM prompt encoder
 sam.mask_decoder.train()
-predictor = SamPredictor_mod(sam)
 optimizer = torch.optim.RAdam(sam.mask_decoder.parameters(), lr=1e-4)
 loss_fn = torch.nn.MSELoss()
 
