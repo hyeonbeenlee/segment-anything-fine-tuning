@@ -52,7 +52,7 @@ class SamLoss(nn.Module):
 
 class SamDataset(Dataset):
     def __init__(self, path):
-        self.original_imgs = glob.glob(f'{path}/*.jpg')[:10]
+        self.original_imgs = glob.glob(f'{path}/*.jpg')
         self.path = path
         self.images = []
         self.mask_labels = []
@@ -199,7 +199,7 @@ def main():
         checkpoint=checkpoint).to(device)  # ViT-Huge
 
     # Initial config
-    # todo: layerwise learning rate decay of 0.8
+    # todo: layerwise learning rate decay of 0.8 not properly applied
     # todo: drop-path of 0.4
     sam.image_encoder.eval()  # ViT-H image encoder (Freeze)
     sam.prompt_encoder.eval()  # SAM prompt encoder (Freeze)
@@ -230,6 +230,7 @@ def main():
     score_val = 0
     max_score_val = 0
     batched_loss_train = 0
+    batched_loss_val = 0
     for epoch in range(10):
         # training batch loop
         sam.mask_decoder.train()
@@ -281,10 +282,14 @@ def main():
                 mask_label_logits = mask_label.type(torch.bool)
                 mask_pred_logits = masks > sam.mask_threshold
                 score_val += (mask_pred_logits == mask_label_logits).sum() / \
-                    (np.prod(mask_label.shape)*len(val_dataloader))
+                    (np.prod(mask_label.shape)*len(val_dataloader)//100)
+                batched_loss_val += loss_fn(masks[:, 0, ...],
+                                            mask_label).item()/(len(val_dataloader)//100)
                 if (idx+1) % (len(val_dataloader)//100) == 0:
                     print(
-                        f"Epoch {epoch+1},validating batch {idx+1}/{len(val_dataloader)}")
+                        f"Epoch {epoch+1},validating batch {idx+1}/{len(val_dataloader)}, score={score_val:.5f} loss={batched_loss_val:.5f}")
+                    score_val = 0
+                    batched_loss_val = 0
         scores_val.append(score_val)
         print(f'Epoch {epoch+1} val score: {score_val}\n')
 
