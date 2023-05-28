@@ -216,9 +216,9 @@ def main():
     # Batch size more than 1 cause error (due to multi-prompt)
     # https://github.com/facebookresearch/segment-anything/issues/277
     train_dataloader = DataLoader(
-        train_dataloader, batch_size=1, shuffle=True, pin_memory=True, num_workers=8, persistent_workers=True)
+        train_dataloader, batch_size=1, shuffle=True, pin_memory=True, num_workers=4, persistent_workers=True)
     val_dataloader = DataLoader(
-        val_dataloader, batch_size=1, shuffle=False, pin_memory=True, num_workers=8, persistent_workers=True)
+        val_dataloader, batch_size=1, shuffle=False, pin_memory=True, num_workers=4, persistent_workers=True)
 
     # Training Loop
     steps = 0
@@ -302,16 +302,15 @@ def main():
                        f'model/finetuned_decoder_score{max_score_val:.5f}.pt')
             sam.mask_decoder.to(device)
 
-            log_dict = {"scores_train": scores_train, "scores_val": scores_val}
+            log_dict = {"scores_train": scores_train, "scores_val": scores_val, "loss_train":loss_train}
             torch.save(
                 log_dict, f'model/finetuned_decoder_score{max_score_val:.5f}.ptlog')
 
     # End of training
     torch.save(best_decoder_param, 'model/finetuned_decoder_final.pt')
-    log_dict = {"scores_train": scores_train, "scores_val": scores_val}
+    log_dict = {"scores_train": scores_train, "scores_val": scores_val, "loss_train":loss_train}
     torch.save(
         log_dict, f'model/finetuned_decoder_score{max_score_val:.5f}.ptlog')
-
 
 if __name__ == '__main__':
     main()
