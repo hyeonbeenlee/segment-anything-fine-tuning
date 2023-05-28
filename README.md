@@ -1,7 +1,7 @@
-# ADL2023
-Advanced Deep Learning, Spring 2023
+# Fine tuning the segment-anything model
+Project for Advanced Deep Learning, Spring 2023
 
-Download PASCAL VOC 2010 image dataset from here: http://host.robots.ox.ac.uk:8080/eval/challenges/voc2010/  
+Download PASCAL VOC 2010 image dataset from here: [http://host.robots.ox.ac.uk:8080/eval/challenges/voc2010/  ](http://host.robots.ox.ac.uk/pascal/VOC/voc2010/#devkit)   
 tar xvzf FILENAME -C data/trainval  
 tar xvzf FILENAME -C data/test  
 
