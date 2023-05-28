@@ -1,4 +1,5 @@
 from segment_anything import sam_model_registry
+import segment_anything
 from utils.mod_funcs import *
 import glob
 import numpy as np
@@ -8,15 +9,16 @@ import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from torch.utils.data import Dataset, DataLoader
 import os
-import multiprocessing
-from threading import Thread
+import multiprocessing as mp
 from torchvision.transforms import CenterCrop
 from functools import partial
+from threading import Thread
+from multiprocessing.pool import ThreadPool
 
 
 class SamDataset(Dataset):
     def __init__(self, path):
-        self.original_imgs = glob.glob(f'{path}/*.jpg')[:10]
+        self.original_imgs = glob.glob(f'{path}/*.jpg')
         self.path = path
         self.images = []
         self.mask_labels = []
@@ -24,6 +26,31 @@ class SamDataset(Dataset):
 
         # Single process
         self.loadimgs(self.original_imgs)
+        
+        # todo: multiprocessing not working properly
+        # Multiprocessing
+        # self.loadimgs_mp(self.original_imgs)
+        
+        self.catimgs()
+    
+    def loadimg(self, path):
+        name_file = os.path.basename(path).split('.')[0]
+        for mask in glob.glob(f"{self.path}/{name_file}*.png"):
+            # filename + person + subcls: coarse only
+            if len(os.path.basename(mask).split('-')) >= 3:
+                self.images.append(self.transform(loadimg(path)))
+                self.mask_labels.append(self.transform(loadmask(mask)))
+                print(f'PID {os.getpid()} loaded {mask}')
+        
+    def loadimgs_mp(self, original_imgs):
+        p=mp.Pool(8)
+        p.map(self.loadimg, original_imgs)
+        p.close()
+        p.join()
+        
+    def catimgs(self):
+        self.images = torch.cat(self.images, dim=0)
+        self.mask_labels = torch.cat(self.mask_labels, dim=0)
 
     def loadimgs(self, original_imgs):
         count = 0
@@ -35,10 +62,7 @@ class SamDataset(Dataset):
                     self.images.append(self.transform(loadimg(img)))
                     self.mask_labels.append(self.transform(loadmask(mask)))
                     count += 1
-                    if count % 500 == 0:
-                        print(f'PID {os.getpid()} loaded {count} images')
-        self.images = torch.cat(self.images, dim=0)
-        self.mask_labels = torch.cat(self.mask_labels, dim=0)
+                    print(f'PID {os.getpid()} loaded {count} images: {mask}/{len(self.original_imgs)}')
 
     def transform(self, image):
         if len(image.shape) == 4:  # NHWC
@@ -75,7 +99,7 @@ def forward_sam(img: torch.FloatTensor, mask_label: torch.FloatTensor, return_lo
         'iou_predictions': (torch.Tensor) The model's predictions of mask quality, in shape BxC.
         'low_res_logits': (torch.Tensor) Low resolution logits with shape BxCxHxW, where H=W=256. 
                         Can be passed as mask input to subsequent iterations of prediction.
-"""
+    """
     # SAM FORWARD
     with torch.no_grad():
         # 1. Image Encoder Forward
@@ -126,8 +150,14 @@ def forward_sam(img: torch.FloatTensor, mask_label: torch.FloatTensor, return_lo
 
     return masks, iou_predictions, low_res_masks
 
-
-if __name__ == '__main__':
+def main():
+    """
+    Fine-tunes SAM mask decoder using PASCAL VOC 2010 dataset (additional person-part annotations).
+    SAM model maps: (image, prompt) -> (mask)
+    The model is prompted with a random single point from mask label.
+    Binary accuracy of thresholded mask predictions is monitored, and the decoder model is saved when the highest validation accuracy is achieved.
+    """
+    global sam, device
     # Load SAM model
     checkpoint = 'model/sam_vit_h_4b8939.pth'
     device = 'cuda'
@@ -149,13 +179,13 @@ if __name__ == '__main__':
     # Batch size more than 1 cause error (due to multi-prompt)
     # https://github.com/facebookresearch/segment-anything/issues/277
     train_dataloader = DataLoader(
-        train_dataloader, batch_size=1, shuffle=True, pin_memory=True, num_workers=4)
+        train_dataloader, batch_size=1, shuffle=True, pin_memory=True, num_workers=4, persistent_workers=True)
     val_dataloader = DataLoader(
-        val_dataloader, batch_size=1, shuffle=False, pin_memory=True, num_workers=4)
+        val_dataloader, batch_size=1, shuffle=False, pin_memory=True, num_workers=4, persistent_workers=True)
     
     # Training Loop
     steps=0
-    steps_max=16
+    steps_max=16 # gradient accumulation steps
     scores_train=[]
     scores_val=[]
     max_score_val=0
@@ -184,7 +214,9 @@ if __name__ == '__main__':
             mask_label_logits=mask_label.type(torch.bool)
             mask_pred_logits=masks>sam.mask_threshold
             score_train+=(mask_pred_logits==mask_label_logits).sum()/(np.prod(mask_label.shape)*len(train_dataloader))
-            print(f"Batch {idx+1}/{len(train_dataloader)}")
+            if (idx+1)%(len(train_dataloader)//3)==0:
+                print(f"Batch {idx+1}/{len(train_dataloader)}")
+        # record score log
         scores_train.append(score_train)
         print (f'Epoch {epoch+1} train score: {score_train}')
         
@@ -201,7 +233,8 @@ if __name__ == '__main__':
                 mask_label_logits=mask_label.type(torch.bool)
                 mask_pred_logits=masks>sam.mask_threshold
                 score_val+=(mask_pred_logits==mask_label_logits).sum()/(np.prod(mask_label.shape)*len(val_dataloader))
-                print(f"Batch {idx+1}/{len(val_dataloader)}")
+                if (idx+1)%(len(val_dataloader)//3)==0:
+                    print(f"Batch {idx+1}/{len(val_dataloader)}")
         scores_val.append(score_val)
         print (f'Epoch {epoch+1} val score: {score_val}\n')
         
@@ -210,8 +243,16 @@ if __name__ == '__main__':
             max_score_val=score_val
             sam.mask_decoder.to('cpu')
             best_decoder_param=deepcopy(sam.mask_decoder.state_dict())
-            torch.save(best_decoder_param,'model/finetuned_decoder.pt')
+            torch.save(best_decoder_param,f'model/finetuned_decoder_score{max_score_val:.5f}.pt')
             sam.mask_decoder.to(device)
+            
+            log_dict={"scores_train":scores_train,"scores_val":scores_val}
+            torch.save(log_dict,f'model/finetuned_decoder_score{max_score_val:.5f}.ptlog')
             
     # End of training
     torch.save(best_decoder_param,'model/finetuned_decoder_final.pt')
+    log_dict={"scores_train":scores_train,"scores_val":scores_val}
+    torch.save(log_dict,f'model/finetuned_decoder_score{max_score_val:.5f}.ptlog')
+    
+if __name__ == '__main__':
+    main()
