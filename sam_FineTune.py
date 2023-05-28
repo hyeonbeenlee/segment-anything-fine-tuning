@@ -51,7 +51,7 @@ class SamLoss(nn.Module):
 
 class SamDataset(Dataset):
     def __init__(self, path):
-        self.original_imgs = glob.glob(f'{path}/*.jpg')[:10]
+        self.original_imgs = glob.glob(f'{path}/*.jpg')
         self.path = path
         self.images = []
         self.mask_labels = []
@@ -244,8 +244,8 @@ def main():
             # evaluate scores
             mask_label_logits = mask_label.type(torch.bool)
             mask_pred_logits = masks > sam.mask_threshold
-            num_consistent_mask_pixels = torch.argwhere(torch.isin(torch.argwhere(mask_pred_logits == True)[
-                                                        :, 2:], torch.argwhere(mask_label_logits == True)[:, 1:]).sum(axis=1) == 2).shape[0]
+            num_consistent_mask_pixels = torch.argwhere(torch.isin(torch.argwhere(mask_label_logits == True)[:, 1:].contiguous(),
+                                                        torch.argwhere(mask_pred_logits == True)[:, 2:].contiguous()).sum(axis=1) == 2).shape[0]
             num_mask_label_pixels = torch.argwhere(
                 mask_label_logits == True).shape[0]
             score_train += num_consistent_mask_pixels / \
