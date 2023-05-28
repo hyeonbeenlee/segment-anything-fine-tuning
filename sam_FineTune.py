@@ -43,7 +43,7 @@ class SamLoss(nn.Module):
 
     def forward(self, mask_pred, mask_label):
         # assume (C,H,W) images
-        Lf = self.focal_loss(mask_label, mask_pred)
+        Lf = self.focal_loss(mask_pred, mask_label)
         Ld = 1-self.dice_loss(mask_pred, mask_label)
         return self.w_focal*Lf+self.w_dice*Ld
 
@@ -301,15 +301,18 @@ def main():
                        f'model/finetuned_decoder_score{max_score_val:.5f}.pt')
             sam.mask_decoder.to(device)
 
-            log_dict = {"scores_train": scores_train, "scores_val": scores_val, "loss_train":loss_train}
+            log_dict = {"scores_train": scores_train,
+                        "scores_val": scores_val, "loss_train": loss_train}
             torch.save(
                 log_dict, f'model/finetuned_decoder_score{max_score_val:.5f}.ptlog')
 
     # End of training
     torch.save(best_decoder_param, 'model/finetuned_decoder_final.pt')
-    log_dict = {"scores_train": scores_train, "scores_val": scores_val, "loss_train":loss_train}
+    log_dict = {"scores_train": scores_train,
+                "scores_val": scores_val, "loss_train": loss_train}
     torch.save(
         log_dict, f'model/finetuned_decoder_score{max_score_val:.5f}.ptlog')
+
 
 if __name__ == '__main__':
     main()
