@@ -36,7 +36,7 @@ class SamLoss(nn.Module):
         # https://aimaster.tistory.com/82
         alpha = 1
         gamma = 2
-        targets = torch.sigmoid(targets)
+        inputs=torch.sigmoid(inputs)
         ce_loss = nn.CrossEntropyLoss()(inputs, targets)
         pt = torch.exp(-ce_loss)
         F_loss = alpha * (1-pt)**gamma * ce_loss
@@ -112,7 +112,7 @@ class SamDataset(Dataset):
         return self.images[index], self.mask_labels[index]
 
 
-def forward_sam(sam: Sam, img: torch.FloatTensor, mask_label: torch.FloatTensor, return_logits: bool = False, numpy: bool = False, multimask_output: bool = True, device='cuda') -> torch.FloatTensor:
+def forward_sam(sam: Sam, img: torch.FloatTensor, mask_label: torch.FloatTensor, return_logits: bool = False, numpy: bool = False, multimask_output: bool = True, device='cuda', return_prompt:bool=False) -> torch.FloatTensor:
     """
     Prompt inputs are generated from a single pixel from mask label.
 
@@ -122,6 +122,7 @@ def forward_sam(sam: Sam, img: torch.FloatTensor, mask_label: torch.FloatTensor,
         return_logits (bool, optional): If True, output masks are thresholded to binary values. Turn off when .backward() call.
         numpy(bool, optional): If true, predicted masks are converted to CPU NumPy arrays.
         multimask_output(bool, optional): If true, output masks are three masks with different resolutions. If false, output masks are single mask with the same resolution as input image (the first, coarse mask returned only).
+        return_prompt(bool, optional): Returns randomly sampled prompt input if true
 
     Returns:
         masks': (torch.Tensor) Batched binary mask predictions,
@@ -180,7 +181,10 @@ def forward_sam(sam: Sam, img: torch.FloatTensor, mask_label: torch.FloatTensor,
     if numpy:
         masks = masks.detach().cpu().numpy()
 
-    return masks, iou_predictions, low_res_masks
+    if return_prompt:
+        return masks, iou_predictions, low_res_masks, prompt_points
+    else:
+        return masks, iou_predictions, low_res_masks
 
 
 def main():
@@ -205,7 +209,7 @@ def main():
     sam.prompt_encoder.eval()  # SAM prompt encoder (Freeze)
     sam.mask_decoder.train()  # Lightweight mask decoder (To be tuned)
     optimizer = torch.optim.AdamW([{'params': sam.mask_decoder.parameters(
-    ), 'lr': 8e-6*0.8**12, 'betas': (0.9, 0.999), 'weight_decay': 0.2}])
+    ), 'lr': 8e-6, 'betas': (0.9, 0.999), 'weight_decay': 0.2}]) # LR= SAM final training lr(8e-6)
     # loss_fn = torch.nn.MSELoss()
     # loss_fn = torch.nn.BCELoss()
     loss_fn = SamLoss()
@@ -238,7 +242,7 @@ def main():
             masks, iou_predictions, low_res_masks = forward_sam(sam,
                                                                 img_label, mask_label, return_logits=False, multimask_output=False)  # take only coarse mask
             # compute loss and grad
-            loss = loss_fn(torch.sigmoid(masks[:, 0, ...]), mask_label)
+            loss = loss_fn(masks[:, 0, ...], mask_label)
             loss /= steps_max
             loss.backward()
             batched_loss_train += loss.item()
