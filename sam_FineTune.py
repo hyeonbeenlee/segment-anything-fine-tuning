@@ -205,7 +205,9 @@ def main():
     sam.prompt_encoder.eval()  # SAM prompt encoder (Freeze)
     sam.mask_decoder.train()  # Lightweight mask decoder (To be tuned)
     optimizer = torch.optim.AdamW([{'params': sam.mask_decoder.parameters(
-    ), 'lr': 8e-4, 'betas': (0.9, 0.999), 'weight_decay': 0.1}])
+    ), 'lr': 8e-6*0.8**12, 'betas': (0.9, 0.999), 'weight_decay': 0.2}])
+    # loss_fn = torch.nn.MSELoss()
+    # loss_fn = torch.nn.BCELoss()
     loss_fn = SamLoss()
 
     # Load dataset
@@ -236,7 +238,7 @@ def main():
             masks, iou_predictions, low_res_masks = forward_sam(sam,
                                                                 img_label, mask_label, return_logits=False, multimask_output=False)  # take only coarse mask
             # compute loss and grad
-            loss = loss_fn(masks[:, 0, ...], mask_label)
+            loss = loss_fn(torch.sigmoid(masks[:, 0, ...]), mask_label)
             loss /= steps_max
             loss.backward()
             batched_loss_train += loss.item()
