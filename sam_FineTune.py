@@ -21,6 +21,7 @@ class SamLoss(nn.Module):
         self.w_dice = self.w_dice/(self.w_focal+self.w_dice)
 
     def dice_loss(self, inputs, targets, smooth=1e-5):
+        # https://towardsdatascience.com/metrics-to-evaluate-your-semantic-segmentation-model-6bcb99639aa2
         inputs = torch.sigmoid(inputs)
         intersection = (inputs * targets).sum(dim=(-2, -1))
         union = inputs.sum(dim=(-2, -1)) + targets.sum(dim=(-2, -1))
@@ -31,6 +32,7 @@ class SamLoss(nn.Module):
         return dice_loss
 
     def focal_loss(self, inputs, targets):
+        # https://aimaster.tistory.com/82
         alpha = 1
         gamma = 2
         targets = torch.sigmoid(targets)
