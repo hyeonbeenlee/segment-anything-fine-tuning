@@ -1,5 +1,4 @@
 from segment_anything import sam_model_registry
-import segment_anything
 from utils.mod_funcs import *
 import glob
 import numpy as np
@@ -11,9 +10,6 @@ from torch.utils.data import Dataset, DataLoader
 import os
 import multiprocessing as mp
 from torchvision.transforms import CenterCrop
-from functools import partial
-from threading import Thread
-from multiprocessing.pool import ThreadPool
 
 
 class SamLoss(nn.Module):
@@ -200,7 +196,8 @@ def main():
 
     # Initial config
     # todo: layerwise learning rate decay of 0.8 not properly applied
-    # todo: drop-path of 0.4
+    # todo: drop-path with rate of 0.4
+    # todo: decreasing lr with factor of 10 at epoch 60000, 86666...not considered
     sam.image_encoder.eval()  # ViT-H image encoder (Freeze)
     sam.prompt_encoder.eval()  # SAM prompt encoder (Freeze)
     sam.mask_decoder.train()  # Lightweight mask decoder (To be tuned)
