@@ -1,4 +1,5 @@
 from segment_anything import sam_model_registry
+from segment_anything.modeling.sam import Sam
 from utils.mod_funcs import *
 import glob
 import numpy as np
@@ -111,7 +112,7 @@ class SamDataset(Dataset):
         return self.images[index], self.mask_labels[index]
 
 
-def forward_sam(img: torch.FloatTensor, mask_label: torch.FloatTensor, return_logits: bool = False, numpy: bool = False, multimask_output: bool = True) -> torch.FloatTensor:
+def forward_sam(sam:Sam,img: torch.FloatTensor, mask_label: torch.FloatTensor, return_logits: bool = False, numpy: bool = False, multimask_output: bool = True, device='cuda') -> torch.FloatTensor:
     """
     Prompt inputs are generated from a single pixel from mask label.
 
@@ -172,7 +173,7 @@ def forward_sam(img: torch.FloatTensor, mask_label: torch.FloatTensor, return_lo
     masks = sam.postprocess_masks(low_res_masks, input_size, original_size)
 
     # binarize
-    if not return_logits:
+    if return_logits:
         masks = masks > sam.mask_threshold
 
     # cast to numpy
@@ -210,26 +211,20 @@ def main():
     # Load dataset
     # fixme: data loading seems weird
     train_dataloader = SamDataset('images/train')
-    val_dataloader = SamDataset('images/val')
 
     # Batch size more than 1 cause error (due to multi-prompt)
     # https://github.com/facebookresearch/segment-anything/issues/277
     train_dataloader = DataLoader(
         train_dataloader, batch_size=1, shuffle=True, pin_memory=True, num_workers=4, persistent_workers=True)
-    val_dataloader = DataLoader(
-        val_dataloader, batch_size=1, shuffle=False, pin_memory=True, num_workers=4, persistent_workers=True)
-
+    
     # Training Loop
     steps = 0
     steps_max = 256  # gradient accumulation steps
     scores_train = []
-    scores_val = []
     loss_train = []
     score_train = 0
-    score_val = 0
-    max_score_val = 0
     batched_loss_train = 0
-    batched_loss_val = 0
+    batch_count=0
     for epoch in range(10):
         # training batch loop
         sam.mask_decoder.train()
@@ -238,8 +233,8 @@ def main():
             img_label = img_label.to(device)
             mask_label = mask_label.to(device)
             # forward
-            masks, iou_predictions, low_res_masks = forward_sam(
-                img_label, mask_label, return_logits=True, multimask_output=False)  # take only coarse mask
+            masks, iou_predictions, low_res_masks = forward_sam(sam,
+                img_label, mask_label, return_logits=False, multimask_output=False)  # take only coarse mask
             # compute loss and grad
             loss = loss_fn(masks[:, 0, ...], mask_label)
             loss /= steps_max
@@ -249,8 +244,8 @@ def main():
             # evaluate scores
             mask_label_logits = mask_label.type(torch.bool)
             mask_pred_logits = masks > sam.mask_threshold
-            score_train += (mask_pred_logits == mask_label_logits).sum() / \
-                (np.prod(mask_label.shape)*steps_max)
+            score_train += (torch.argwhere(mask_pred_logits==True) == torch.argwhere(mask_label_logits==True)).sum() / \
+                (torch.argwhere(mask_label_logits==True).shape[0]*steps_max)
             # acuumulated grads
             if steps == steps_max:
                 print(
@@ -258,60 +253,27 @@ def main():
                 # record score log
                 scores_train.append(score_train)
                 loss_train.append(batched_loss_train)
-                # initialize
-                steps = 0
-                batched_loss_train = 0
-                score_train = 0
+                
                 # backprop acuumulations
                 optimizer.step()
                 for p in sam.mask_decoder.parameters():
                     p.grad = None
+                batch_count+=1
 
-        # validation batch loop
-        sam.mask_decoder.eval()
-        with torch.no_grad():
-            for idx, batch in enumerate(val_dataloader):
-                img_label, mask_label = batch
-                img_label = img_label.to(device)
-                mask_label = mask_label.to(device)
-                # forward
-                masks, iou_predictions, low_res_masks = forward_sam(
-                    img_label, mask_label, return_logits=True, multimask_output=False)  # take only coarse mask
-                # evaluate scores
-                mask_label_logits = mask_label.type(torch.bool)
-                mask_pred_logits = masks > sam.mask_threshold
-                score_val += (mask_pred_logits == mask_label_logits).sum() / \
-                    (np.prod(mask_label.shape)*len(val_dataloader)//100)
-                batched_loss_val += loss_fn(masks[:, 0, ...],
-                                            mask_label).item()/(len(val_dataloader)//100)
-                if (idx+1) % (len(val_dataloader)//100) == 0:
-                    print(
-                        f"Epoch {epoch+1},validating batch {idx+1}/{len(val_dataloader)}, score={score_val:.5f} loss={batched_loss_val:.5f}")
-                    score_val = 0
-                    batched_loss_val = 0
-        scores_val.append(score_val)
-        print(f'Epoch {epoch+1} val score: {score_val}\n')
-
-        # End of epoch
-        if max_score_val < score_val:
-            max_score_val = score_val
-            sam.mask_decoder.to('cpu')
-            best_decoder_param = deepcopy(sam.mask_decoder.state_dict())
-            torch.save(best_decoder_param,
-                       f'model/finetuned_decoder_score{max_score_val:.5f}.pt')
-            sam.mask_decoder.to(device)
-
-            log_dict = {"scores_train": scores_train,
-                        "scores_val": scores_val, "loss_train": loss_train}
-            torch.save(
-                log_dict, f'model/finetuned_decoder_score{max_score_val:.5f}.ptlog')
-
-    # End of training
-    torch.save(best_decoder_param, 'model/finetuned_decoder_final.pt')
-    log_dict = {"scores_train": scores_train,
-                "scores_val": scores_val, "loss_train": loss_train}
-    torch.save(
-        log_dict, f'model/finetuned_decoder_score{max_score_val:.5f}.ptlog')
+                # End of every update
+                name=f"finetuned_decoder_epoch{epoch+1:02d}_batch{batch_count:04d}_score{score_train:.4f}"
+                sam.mask_decoder.to('cpu')
+                best_decoder_param = deepcopy(sam.mask_decoder.state_dict())
+                sam.mask_decoder.to(device)
+                torch.save(best_decoder_param, f'model/{name}.pt')
+                
+                log_dict = {"scores_train": scores_train, "loss_train": loss_train}
+                torch.save(log_dict, f'model/{name}.ptlog')
+                
+                # initialize
+                steps = 0
+                batched_loss_train = 0
+                score_train = 0
 
 
 if __name__ == '__main__':
