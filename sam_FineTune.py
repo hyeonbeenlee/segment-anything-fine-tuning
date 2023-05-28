@@ -51,7 +51,7 @@ class SamLoss(nn.Module):
 
 class SamDataset(Dataset):
     def __init__(self, path):
-        self.original_imgs = glob.glob(f'{path}/*.jpg')
+        self.original_imgs = glob.glob(f'{path}/*.jpg')[:10]
         self.path = path
         self.images = []
         self.mask_labels = []
@@ -112,7 +112,7 @@ class SamDataset(Dataset):
         return self.images[index], self.mask_labels[index]
 
 
-def forward_sam(sam:Sam,img: torch.FloatTensor, mask_label: torch.FloatTensor, return_logits: bool = False, numpy: bool = False, multimask_output: bool = True, device='cuda') -> torch.FloatTensor:
+def forward_sam(sam: Sam, img: torch.FloatTensor, mask_label: torch.FloatTensor, return_logits: bool = False, numpy: bool = False, multimask_output: bool = True, device='cuda') -> torch.FloatTensor:
     """
     Prompt inputs are generated from a single pixel from mask label.
 
@@ -216,7 +216,7 @@ def main():
     # https://github.com/facebookresearch/segment-anything/issues/277
     train_dataloader = DataLoader(
         train_dataloader, batch_size=1, shuffle=True, pin_memory=True, num_workers=4, persistent_workers=True)
-    
+
     # Training Loop
     steps = 0
     steps_max = 256  # gradient accumulation steps
@@ -224,7 +224,7 @@ def main():
     loss_train = []
     score_train = 0
     batched_loss_train = 0
-    batch_count=0
+    batch_count = 0
     for epoch in range(10):
         # training batch loop
         sam.mask_decoder.train()
@@ -234,7 +234,7 @@ def main():
             mask_label = mask_label.to(device)
             # forward
             masks, iou_predictions, low_res_masks = forward_sam(sam,
-                img_label, mask_label, return_logits=False, multimask_output=False)  # take only coarse mask
+                                                                img_label, mask_label, return_logits=False, multimask_output=False)  # take only coarse mask
             # compute loss and grad
             loss = loss_fn(masks[:, 0, ...], mask_label)
             loss /= steps_max
@@ -244,8 +244,12 @@ def main():
             # evaluate scores
             mask_label_logits = mask_label.type(torch.bool)
             mask_pred_logits = masks > sam.mask_threshold
-            score_train += (torch.argwhere(mask_pred_logits==True) == torch.argwhere(mask_label_logits==True)).sum() / \
-                (torch.argwhere(mask_label_logits==True).shape[0]*steps_max)
+            num_consistent_mask_pixels = torch.argwhere(torch.isin(torch.argwhere(mask_pred_logits == True)[
+                                                        :, 2:], torch.argwhere(mask_label_logits == True)[:, 1:]).sum(axis=1) == 2).shape[0]
+            num_mask_label_pixels = torch.argwhere(
+                mask_label_logits == True).shape[0]
+            score_train += num_consistent_mask_pixels / \
+                (num_mask_label_pixels*steps_max)
             # acuumulated grads
             if steps == steps_max:
                 print(
@@ -253,23 +257,24 @@ def main():
                 # record score log
                 scores_train.append(score_train)
                 loss_train.append(batched_loss_train)
-                
+
                 # backprop acuumulations
                 optimizer.step()
                 for p in sam.mask_decoder.parameters():
                     p.grad = None
-                batch_count+=1
+                batch_count += 1
 
                 # End of every update
-                name=f"finetuned_decoder_epoch{epoch+1:02d}_batch{batch_count:04d}_score{score_train:.4f}"
+                name = f"finetuned_decoder_epoch{epoch+1:02d}_batch{batch_count:04d}_score{score_train:.4f}"
                 sam.mask_decoder.to('cpu')
                 best_decoder_param = deepcopy(sam.mask_decoder.state_dict())
                 sam.mask_decoder.to(device)
                 torch.save(best_decoder_param, f'model/{name}.pt')
-                
-                log_dict = {"scores_train": scores_train, "loss_train": loss_train}
+
+                log_dict = {"scores_train": scores_train,
+                            "loss_train": loss_train}
                 torch.save(log_dict, f'model/{name}.ptlog')
-                
+
                 # initialize
                 steps = 0
                 batched_loss_train = 0
