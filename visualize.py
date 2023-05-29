@@ -81,7 +81,7 @@ def compute_miou():
     scores = []
     scores_tuned = []
     count=0
-    for i in glob.glob(f'{targets_path}/*.jpg')[:5]:
+    for i in glob.glob(f'{targets_path}/*.jpg'):
         img = loadimg(i)
         name_img = '.'.join(os.path.basename(i).split('.')[:-1])
         for m in glob.glob(f'{targets_path}/{name_img}*.png'):
@@ -91,23 +91,25 @@ def compute_miou():
             with torch.no_grad():
                 mask, _, __ = SamForward(
                     sam, img, mask_label, multimask_output=False)
-                mask_tuned, _, __ = SamForward(
-                    sam_tuned, img, mask_label, multimask_output=False)
+                # mask_tuned, _, __ = SamForward(
+                #     sam_tuned, img, mask_label, multimask_output=False)
             # logits
             mask_label=mask_label.type(torch.bool)
             mask=(mask > sam_tuned.mask_threshold).cpu()
-            mask_tuned=(mask_tuned > sam_tuned.mask_threshold).cpu()
+            # mask_tuned=(mask_tuned > sam_tuned.mask_threshold).cpu()
             # evaluate
             score = metric.iou_logits(mask, mask_label)
-            score_tuned = metric.iou_logits(mask_tuned, mask_label)
+            # score_tuned = metric.iou_logits(mask_tuned, mask_label)
             scores.append(score)
-            scores_tuned.append(score_tuned)
+            # scores_tuned.append(score_tuned)
             count+=1
             print(
-                f"{count}/{total_annotations}: {score.item():.6f}, {score_tuned.item():.6f}")
+                f"{count}/{total_annotations}: {score.item():.6f}")
+            # print(
+                # f"{count}/{total_annotations}: {score.item():.6f}, {score_tuned.item():.6f}")
     print()
     print(f"Original SAM: {torch.cat(scores).mean()}")
-    print(f"Fine-tuned SAM: {torch.cat(scores_tuned).mean()}")
+    # print(f"Fine-tuned SAM: {torch.cat(scores_tuned).mean()}")
 
 
 if __name__ == '__main__':
