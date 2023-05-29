@@ -1,6 +1,6 @@
 from segment_anything import sam_model_registry
 from utils.predictor import SamPredictor_mod
-from utils.mod_funcs import *
+from utils.functions import *
 from typing import Tuple
 import cv2
 import numpy as np

@@ -1,6 +1,6 @@
 from segment_anything import sam_model_registry
 from segment_anything.modeling.sam import Sam
-from utils.mod_funcs import *
+from utils.functions import *
 import glob
 import numpy as np
 import torch
@@ -11,6 +11,7 @@ from torch.utils.data import Dataset, DataLoader
 import os
 import multiprocessing as mp
 from torchvision.transforms import CenterCrop
+from torchvision.ops import focal_loss
 
 
 class SamLoss(nn.Module):
@@ -21,37 +22,63 @@ class SamLoss(nn.Module):
         self.w_focal = self.w_focal/(self.w_focal+self.w_dice)
         self.w_dice = self.w_dice/(self.w_focal+self.w_dice)
 
-    def dice_loss(self, inputs, targets, smooth=1e-5):
+    def iou_logits(self, inputs, targets):
+        eps = 1e-5
+        intersection = torch.sum(inputs*targets, dim=(-2, -1))
+        union = torch.sum(inputs, dim=(-2, -1)) + \
+            torch.sum(targets, dim=(-2, -1))-intersection
+        iou = torch.mean((intersection+eps)/(union+eps),dim=0)
+        return iou
+
+    def iou_loss(self, inputs, targets, iou_predictions):
+        # inputs: NC
+        # https://towardsdatascience.com/metrics-to-evaluate-your-semantic-segmentation-model-6bcb99639aa2
+        eps = 1e-5
+        inputs = torch.sigmoid(inputs)
+        intersection = torch.sum(inputs*targets, dim=(-2, -1))
+        union = torch.sum(inputs, dim=(-2, -1)) + \
+            torch.sum(targets, dim=(-2, -1))-intersection
+        iou_label = (intersection+eps)/(union+eps)
+        iou_loss = torch.mean(torch.square(iou_label-iou_predictions))
+        return iou_loss
+
+    def dice_loss(self, inputs, targets, eps=1e-5):
+        # inputs: NCHW
+        # targets: NCHW
         # https://towardsdatascience.com/metrics-to-evaluate-your-semantic-segmentation-model-6bcb99639aa2
         inputs = torch.sigmoid(inputs)
-        intersection = (inputs * targets).sum(dim=(-2, -1))
-        union = inputs.sum(dim=(-2, -1)) + targets.sum(dim=(-2, -1))
+        intersection = torch.sum(inputs*targets, dim=(-2, -1))
+        union = torch.sum(inputs, dim=(-2, -1)) + \
+            torch.sum(targets, dim=(-2, -1))-intersection
         # dice coefficient
-        dice = 2.0 * (intersection + smooth) / (union + smooth)
+        dice = torch.mean(2.0 * (intersection + eps) / (union + eps), dim=0)
         # dice loss
         dice_loss = 1.0 - dice
         return dice_loss
 
-    def focal_loss(self, inputs, targets):
-        # https://aimaster.tistory.com/82
-        alpha = 1
-        gamma = 2
-        inputs=torch.sigmoid(inputs)
-        ce_loss = nn.CrossEntropyLoss()(inputs, targets)
-        pt = torch.exp(-ce_loss)
-        F_loss = alpha * (1-pt)**gamma * ce_loss
-        return torch.mean(F_loss)
+    def focal_loss(self, inputs, targets, alpha: float = 0.25, gamma: float = 2):
+        # https://pytorch.org/vision/main/_modules/torchvision/ops/focal_loss.html
+        p = torch.sigmoid(inputs)
+        ce_loss = F.binary_cross_entropy_with_logits(
+            inputs, targets, reduction="none")
+        p_t = p * targets + (1 - p) * (1 - targets)
+        loss = ce_loss * ((1 - p_t) ** gamma)
+        if alpha >= 0:
+            alpha_t = alpha * targets + (1 - alpha) * (1 - targets)
+            loss = alpha_t * loss
+        return loss.mean()
 
-    def forward(self, mask_pred, mask_label):
+    def forward(self, mask_pred, mask_label, iou_predictions):
         # assume (C,H,W) images
         Lf = self.focal_loss(mask_pred, mask_label)
         Ld = 1-self.dice_loss(mask_pred, mask_label)
-        return self.w_focal*Lf+self.w_dice*Ld
+        Li = self.iou_loss(mask_pred, mask_label, iou_predictions)
+        return self.w_focal*Lf+self.w_dice*Ld+Li
 
 
 class SamDataset(Dataset):
     def __init__(self, path):
-        self.original_imgs = glob.glob(f'{path}/*.jpg')
+        self.original_imgs = glob.glob(f'{path}/*.jpg')[:50]
         self.path = path
         self.images = []
         self.mask_labels = []
@@ -112,7 +139,7 @@ class SamDataset(Dataset):
         return self.images[index], self.mask_labels[index]
 
 
-def forward_sam(sam: Sam, img: torch.FloatTensor, mask_label: torch.FloatTensor, return_logits: bool = False, numpy: bool = False, multimask_output: bool = True, device='cuda', return_prompt:bool=False) -> torch.FloatTensor:
+def forward_sam(sam: Sam, img: torch.FloatTensor, mask_label: torch.FloatTensor, return_logits: bool = False, numpy: bool = False, multimask_output: bool = True, device='cuda', return_prompt: bool = False) -> torch.FloatTensor:
     """
     Prompt inputs are generated from a single pixel from mask label.
 
@@ -209,7 +236,7 @@ def main():
     sam.prompt_encoder.eval()  # SAM prompt encoder (Freeze)
     sam.mask_decoder.train()  # Lightweight mask decoder (To be tuned)
     optimizer = torch.optim.AdamW([{'params': sam.mask_decoder.parameters(
-    ), 'lr': 8e-6, 'betas': (0.9, 0.999), 'weight_decay': 0.2}]) # LR= SAM final training lr(8e-6)
+    ), 'lr': 8e-6, 'betas': (0.9, 0.999), 'weight_decay': 0.2}])  # LR= SAM final training lr(8e-6)
     # loss_fn = torch.nn.MSELoss()
     # loss_fn = torch.nn.BCELoss()
     loss_fn = SamLoss()
@@ -225,7 +252,7 @@ def main():
 
     # Training Loop
     steps = 0
-    steps_max = 256  # gradient accumulation steps
+    steps_max = 8  # gradient accumulation steps
     scores_train = []
     loss_train = []
     score_train = 0
@@ -242,20 +269,16 @@ def main():
             masks, iou_predictions, low_res_masks = forward_sam(sam,
                                                                 img_label, mask_label, return_logits=False, multimask_output=False)  # take only coarse mask
             # compute loss and grad
-            loss = loss_fn(masks[:, 0, ...], mask_label)
+            loss = loss_fn(masks[:, 0, ...], mask_label, iou_predictions)
             loss /= steps_max
             loss.backward()
             batched_loss_train += loss.item()
             steps += 1
             # evaluate scores
-            mask_label_logits = mask_label.type(torch.bool)
-            mask_pred_logits = masks > sam.mask_threshold
-            num_consistent_mask_pixels = torch.argwhere(torch.isin(torch.argwhere(mask_label_logits == True)[:, 1:].contiguous(),
-                                                        torch.argwhere(mask_pred_logits == True)[:, 2:].contiguous()).sum(axis=1) == 2).shape[0]
-            num_mask_label_pixels = torch.argwhere(
-                mask_label_logits == True).shape[0]
-            score_train += num_consistent_mask_pixels / \
-                (num_mask_label_pixels*steps_max)
+            with torch.no_grad():
+                mask_label_logits = mask_label.type(torch.bool)
+                mask_pred_logits = masks > sam.mask_threshold
+                score_train = SamLoss().iou_logits(mask_pred_logits, mask_label_logits).item()
             # acuumulated grads
             if steps == steps_max:
                 print(
