@@ -1,6 +1,7 @@
 # Fine tuning the segment-anything model
 ## Summary
-This is a project repository for Advanced Deep Learning, 2023 spring, Kyunghee University.
+#### This is a project repository for ***2023 spring semester Advanced Deep Learning***, Kyunghee University.  
+
 [sam_FineTune.py](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/blob/master/sam_FineTune.py) implements fine-tuning of the SAM mask decoder.  
 [sam_forward_NATIVE.py](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/blob/master/sam_forward_NATIVE.py) implements ***batched SAM forward*** using ***torch*** and ***segment-anything.modeling.sam.Sam*** class.  
 [sam_forward_SamPredictor.py](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/blob/master/sam_forward_SamPredictor.py) implements unbatched SAM forward using *segment-anything.SamPredictor* class.
