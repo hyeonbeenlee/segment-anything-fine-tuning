@@ -28,8 +28,8 @@ cd segment-anything-fine-tuning
 ```
 3. Download PASCAL VOC 2010 train/val/test datasets.
 ```
-wget http://host.robots.ox.ac.uk/pascal/VOC/voc2010/VOCtrainval_03-May-2010.tar
-wget http://host.robots.ox.ac.uk:8080/eval/downloads/VOC2010test.tar
+wget http://host.robots.ox.ac.uk/pascal/VOC/voc2010/VOCtrainval_03-May-2010.tar #train/validation
+wget http://host.robots.ox.ac.uk:8080/eval/downloads/VOC2010test.tar #test
 mkdir -p data/trainval
 mkdir -p data/test
 tar xvzf VOCtrainval_03-May-2010.tar -C data/trainval
