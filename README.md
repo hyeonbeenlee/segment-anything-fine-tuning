@@ -32,8 +32,8 @@ wget http://host.robots.ox.ac.uk/pascal/VOC/voc2010/VOCtrainval_03-May-2010.tar 
 wget http://host.robots.ox.ac.uk:8080/eval/downloads/VOC2010test.tar #test
 mkdir -p data/trainval
 mkdir -p data/test
-tar xvzf VOCtrainval_03-May-2010.tar -C data/trainval
-tar xvzf VOC2010test.tar -C data/test
+tar xvf VOCtrainval_03-May-2010.tar -C data/trainval
+tar xvf VOC2010test.tar -C data/test
 ```
 
 
