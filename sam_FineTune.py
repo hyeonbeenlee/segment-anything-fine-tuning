@@ -86,7 +86,7 @@ def main():
             # update acuumulated grads
             if steps == steps_max or idx == len(train_dataloader)-1:
                 print(
-                    f"Epoch {epoch+1}, stepping at batch {idx+1}/{len(train_dataloader)},score={score_train:.5f} loss={batched_loss_train:.5f}")
+                    f"Epoch {epoch+1}, stepping at batch {idx+1}/{len(train_dataloader)}, mIoU score={score_train:.5f}, loss={batched_loss_train:.5f}")
                 # record score log
                 scores_train.append(score_train)
                 loss_train.append(batched_loss_train)
