@@ -10,6 +10,7 @@ from utils.visual import *
 import glob
 import shutil
 from random import sample
+import numpy as np
 
 
 def plot_mask(img_path, mask_label_path):
@@ -58,25 +59,7 @@ def plot_log():
     plt.close('all')
 
 
-if __name__ == '__main__':
-    # load original model
-    checkpoint = 'model/sam_vit_h_4b8939.pth'
-    device = 'cuda'
-    sam = sam_model_registry['vit_h'](
-        checkpoint=checkpoint).to(device)  # ViT-Huge
-
-    # load fine-tuned decoder
-    model_path = 'model/SamLoss/finetuned_decoder_epoch10_batch0100_score0.2105.pt'
-    sam_tuned = deepcopy(sam)
-    sam_tuned.mask_decoder.load_state_dict(torch.load(model_path))
-
-    sam_tuned_log = torch.load(model_path+'log')
-
-    plot_template()
-    plot_log()
-    # quit()
-    targets_path = 'images/train'
-
+def plot_predictions():
     shutil.rmtree(targets_path+'_predictions')
     os.makedirs(targets_path+'_predictions')
     original_imgs = glob.glob(f'{targets_path}/*.jpg')[:200]
@@ -87,3 +70,68 @@ if __name__ == '__main__':
             name_mask = '-'.join(name_mask.split('-')[1:])
             if len(name_mask.split('-')) > 1:
                 plot_mask(img, mask_label)
+
+
+def compute_miou():
+    from utils.sam_loss import SamLoss
+    metric = SamLoss()
+    total_annotations = len(glob.glob(f'{targets_path}/*.png'))
+    print(f"Computing IoU scores on {targets_path}")
+
+    scores = []
+    scores_tuned = []
+    count=0
+    for i in glob.glob(f'{targets_path}/*.jpg')[:5]:
+        img = loadimg(i)
+        name_img = '.'.join(os.path.basename(i).split('.')[:-1])
+        for m in glob.glob(f'{targets_path}/{name_img}*.png'):
+            # load mask
+            mask_label = loadmask(m)
+            # forward
+            with torch.no_grad():
+                mask, _, __ = SamForward(
+                    sam, img, mask_label, multimask_output=False)
+                mask_tuned, _, __ = SamForward(
+                    sam_tuned, img, mask_label, multimask_output=False)
+            # logits
+            mask_label=mask_label.type(torch.bool)
+            mask=(mask > sam_tuned.mask_threshold).cpu()
+            mask_tuned=(mask_tuned > sam_tuned.mask_threshold).cpu()
+            # evaluate
+            score = metric.iou_logits(mask, mask_label)
+            score_tuned = metric.iou_logits(mask_tuned, mask_label)
+            scores.append(score)
+            scores_tuned.append(score_tuned)
+            count+=1
+            print(
+                f"{count}/{total_annotations}: {score.item():.6f}, {score_tuned.item():.6f}")
+    print()
+    print(f"Original SAM: {torch.cat(scores).mean()}")
+    print(f"Fine-tuned SAM: {torch.cat(scores_tuned).mean()}")
+
+
+if __name__ == '__main__':
+    # load original model
+    checkpoint = 'model/sam_vit_h_4b8939.pth'
+    device = 'cuda'
+    sam = sam_model_registry['vit_h'](
+        checkpoint=checkpoint).to(device)  # ViT-Huge
+
+    # load fine-tuned decoder
+    model_path = 'model/finetuned_decoder_epoch08_batch0104_score0.4295.pt'
+    sam_tuned = deepcopy(sam)
+    sam_tuned.mask_decoder.load_state_dict(torch.load(model_path))
+    sam_tuned_log = torch.load(model_path+'log')
+
+    sam.eval()
+    sam_tuned.eval()
+
+    # validation data path
+    targets_path = 'images/val'
+
+    # plot
+    # plot_template()
+    # plot_log()
+    # quit()
+    # plot_predictions(model_path)
+    compute_miou()
