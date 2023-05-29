@@ -10,6 +10,7 @@
 
 ## Setup for the repository
 ### Packages
+1. Install python packages.
 Refer to [requirements.txt](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/blob/master/requirements.txt) or if you're using conda environment,
 ```
 conda create -n sam python=3.10
@@ -20,30 +21,36 @@ pip install opencv-python pycocotools matplotlib onnxruntime onnx numpy scipy
 and install [PyTorch.](https://pytorch.org/get-started/locally/)
 
 ### Datasets
-1. Download PASCAL VOC 2010 image dataset from here: [http://host.robots.ox.ac.uk:8080/eval/challenges/voc2010/  ](http://host.robots.ox.ac.uk/pascal/VOC/voc2010/#devkit)   
-2. Then run:
+2. Move to your working directory and clone this repo.
 ```
+git clone https://github.com/hyeonbeenlee/segment-anything-fine-tuning.git
+cd segment-anything-fine-tuning
+```
+3. Download PASCAL VOC 2010 train/val/test datasets.
+```
+wget http://host.robots.ox.ac.uk/pascal/VOC/voc2010/VOCtrainval_03-May-2010.tar
+wget http://host.robots.ox.ac.uk:8080/eval/downloads/VOC2010test.tar
 mkdir -p data/trainval
 mkdir -p data/test
-tar xvzf <DOWNLOADED_FILEPATH> -C data/trainval
-tar xvzf <DOWNLOADED_FILEPATH> -C data/test
+tar xvzf VOCtrainval_03-May-2010.tar -C data/trainval
+tar xvzf VOC2010test.tar -C data/test
 ```
 
 
-3. Download PASCAL-Part annotations from here: http://roozbehm.info/pascal-parts/pascal-parts.html  
-4. Then run:
+4. Download PASCAL-Part annotations.
 ```
+wget http://roozbehm.info/pascal-parts/trainval.tar.gz
 mkdir -p data/annotations
-tar xvzf <DOWNLOADED_FILEPATH> -C data/annotations  
+tar xvzf trainval.tar.gz -C data/annotations  
 ```
 5. Run [dataprocess.py](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/blob/master/dataprocess.py)
 
 ### Models
-1. Download pretrained ViT-H base SAM model here: https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
-2. Then run:
+6. Download pretrained ViT-H base SAM model. 
 ```
+wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
 mkdir model
-mv <DOWNLOADED_FILEPATH> model/sam_vit_h_4b8939.pth
+mv sam_vit_h_4b8939.pth model
 ```
 Now you're good to go!
 
