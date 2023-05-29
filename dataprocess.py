@@ -88,4 +88,8 @@ def process():
 
 
 if __name__ == "__main__":
+    # Sinlge processing
+    # loadanno(glob.glob('data/annotations/Annotations_Part/*.mat'))
+    
+    # Multiprocessing
     process()
