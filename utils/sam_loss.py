@@ -47,7 +47,7 @@ class SamLoss(nn.Module):
         dice_loss = 1.0 - dice
         return dice_loss
 
-    def focal_loss(self, inputs, targets, alpha: float = 0.25, gamma: float = 2):
+    def focal_loss(self, inputs, targets, alpha: float = 0.25, gamma: float = 1):
         # inputs: NCHW
         # targets: NCHW
         # https://pytorch.org/vision/main/_modules/torchvision/ops/focal_loss.html

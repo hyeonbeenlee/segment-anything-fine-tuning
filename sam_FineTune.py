@@ -16,6 +16,7 @@ from utils.sam_dataset import SamDataset
 from utils.sam_forward import SamForward
 import random
 
+
 def main():
     """
     Fine-tunes SAM mask decoder using PASCAL VOC 2010 dataset (additional person-part annotations).
@@ -63,13 +64,14 @@ def main():
     for epoch in range(10):
         # training batch loop
         sam.mask_decoder.train()
+        steps = 0
         for idx, batch in enumerate(train_dataloader):
             img_label, mask_label = batch
             img_label = img_label.to(device)
             mask_label = mask_label.to(device)
             # forward
             masks, iou_predictions, low_res_masks = SamForward(sam,
-                                                                img_label, mask_label, return_logits=False, multimask_output=False)  # take only coarse mask
+                                                               img_label, mask_label, return_logits=False, multimask_output=False)  # take only coarse mask
             # compute loss and grad
             loss = loss_fn(masks[:, 0, ...], mask_label, iou_predictions)
             loss /= steps_max
@@ -81,8 +83,8 @@ def main():
                 mask_label_logits = mask_label.type(torch.bool)
                 mask_pred_logits = masks > sam.mask_threshold
                 score_train = SamLoss().iou_logits(mask_pred_logits, mask_label_logits).item()
-            # acuumulated grads
-            if steps == steps_max:
+            # update acuumulated grads
+            if steps == steps_max or idx == len(train_dataloader)-1:
                 print(
                     f"Epoch {epoch+1}, stepping at batch {idx+1}/{len(train_dataloader)},score={score_train:.5f} loss={batched_loss_train:.5f}")
                 # record score log
