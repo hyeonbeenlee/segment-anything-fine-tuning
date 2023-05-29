@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-def SamForward(sam: Sam, img: torch.FloatTensor, mask_label: torch.FloatTensor, return_logits: bool = False, numpy: bool = False, multimask_output: bool = True, device='cuda', return_prompt: bool = False) -> torch.FloatTensor:
+def SamForward(sam: Sam, img: torch.FloatTensor, mask_label: torch.FloatTensor, return_logits: bool = False, numpy: bool = False, multimask_output: bool = False, device='cuda', return_prompt: bool = False) -> torch.FloatTensor:
     """
     Prompt inputs are generated from a single pixel from mask label.
 
