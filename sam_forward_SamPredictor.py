@@ -1,5 +1,5 @@
 from segment_anything import sam_model_registry
-from utils.predictor import SamPredictor_mod
+from utils.modified_sampredictor import SamPredictor_mod
 import cv2
 import numpy as np
 import torch

@@ -1,5 +1,5 @@
 from segment_anything import sam_model_registry
-from utils.predictor import SamPredictor_mod
+from utils.modified_sampredictor import SamPredictor_mod
 from utils.functions import *
 from typing import Tuple
 import cv2

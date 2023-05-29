@@ -1,6 +1,6 @@
 import torch
 import cv2
-from sam_FineTune import forward_sam
+from sam_FineTune import SamForward
 from segment_anything import sam_model_registry
 from utils.functions import loadimg
 from utils.functions import loadmask
@@ -13,20 +13,15 @@ from random import sample
 
 
 def plot_mask(img_path, mask_label_path):
-    # train img
     img = loadimg(img_path)
     mask_label = loadmask(mask_label_path)
 
-    # validation img
-    # img = loadimg('images/val/2010_005991.jpg')
-    # mask_label = loadmask('images/val/2010_005991-person-rlarm.png')
-
     with torch.no_grad():
         torch.manual_seed(0)
-        mask, _, __, prompt = forward_sam(
+        mask, _, __, prompt = SamForward(
             sam, img, mask_label, return_logits=True, multimask_output=False, return_prompt=True)
         torch.manual_seed(0)
-        mask_tuned, _, __, prompt_ = forward_sam(
+        mask_tuned, _, __, prompt_ = SamForward(
             sam_tuned, img, mask_label, return_logits=True, multimask_output=False, return_prompt=True)
     prompt = prompt.cpu().numpy()
     masks = [mask_label.unsqueeze(0), mask, mask_tuned]
@@ -71,7 +66,7 @@ if __name__ == '__main__':
         checkpoint=checkpoint).to(device)  # ViT-Huge
 
     # load fine-tuned decoder
-    model_path = 'model/finetuned_decoder_epoch02_batch0011_score0.5124.pt'
+    model_path = 'model/finetuned_decoder_epoch03_batch0021_score0.2082.pt'
     sam_tuned = deepcopy(sam)
     sam_tuned.mask_decoder.load_state_dict(torch.load(model_path))
 

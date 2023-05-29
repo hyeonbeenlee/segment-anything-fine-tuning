@@ -13,6 +13,7 @@ class SamLoss(nn.Module):
         self.w_dice = self.w_dice/(self.w_focal+self.w_dice)
 
     def iou_logits(self, inputs, targets):
+        # For model score evaluation
         eps = 1e-5
         intersection = torch.sum(inputs*targets, dim=(-2, -1))
         union = torch.sum(inputs, dim=(-2, -1)) + \
@@ -21,7 +22,7 @@ class SamLoss(nn.Module):
         return iou
 
     def iou_loss(self, inputs, targets, iou_predictions):
-        # inputs: NC
+        # Expects (N,C) where C=3 if multimask_output else C=1.
         # https://towardsdatascience.com/metrics-to-evaluate-your-semantic-segmentation-model-6bcb99639aa2
         eps = 1e-5
         inputs = torch.sigmoid(inputs)
@@ -47,6 +48,8 @@ class SamLoss(nn.Module):
         return dice_loss
 
     def focal_loss(self, inputs, targets, alpha: float = 0.25, gamma: float = 2):
+        # inputs: NCHW
+        # targets: NCHW
         # https://pytorch.org/vision/main/_modules/torchvision/ops/focal_loss.html
         p = torch.sigmoid(inputs)
         ce_loss = F.binary_cross_entropy_with_logits(
@@ -59,7 +62,7 @@ class SamLoss(nn.Module):
         return loss.mean()
 
     def forward(self, mask_pred, mask_label, iou_predictions):
-        # assume (C,H,W) images
+        # assume (N,C,H,W) masks and mask-predictions, (N,C) iou predictions from decoder.
         Lf = self.focal_loss(mask_pred, mask_label)
         Ld = self.dice_loss(mask_pred, mask_label)
         Li = self.iou_loss(mask_pred, mask_label, iou_predictions)
