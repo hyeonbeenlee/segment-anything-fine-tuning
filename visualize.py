@@ -57,7 +57,7 @@ def plot_log():
     ax[1].plot(score_history)
     ax[1].set_ylim(0, 1)
     ax[1].set_xlabel('Batch updates')
-    ax[1].set_ylabel('Mask match rate')
+    ax[1].set_ylabel('IoU score')
     fig.tight_layout()
     fig.savefig('test_log.png')
     plt.close('all')
@@ -71,7 +71,7 @@ if __name__ == '__main__':
         checkpoint=checkpoint).to(device)  # ViT-Huge
 
     # load fine-tuned decoder
-    model_path = 'model/finetuned_decoder_epoch01_batch0003_score0.9085.pt'
+    model_path = 'model/finetuned_decoder_epoch02_batch0011_score0.5124.pt'
     sam_tuned = deepcopy(sam)
     sam_tuned.mask_decoder.load_state_dict(torch.load(model_path))
 
@@ -84,7 +84,7 @@ if __name__ == '__main__':
 
     shutil.rmtree(targets_path+'_predictions')
     os.makedirs(targets_path+'_predictions')
-    original_imgs = sample(glob.glob(f'{targets_path}/*.jpg'), k=100)
+    original_imgs = glob.glob(f'{targets_path}/*.jpg')[:100]
     for img in original_imgs:
         name = '.'.join(os.path.basename(img).split('.')[:-1])
         for mask_label in glob.glob(f'{targets_path}/{name}*.png'):
