@@ -43,7 +43,10 @@ wget http://roozbehm.info/pascal-parts/trainval.tar.gz
 mkdir -p data/annotations
 tar xvzf trainval.tar.gz -C data/annotations  
 ```
-5. Run [dataprocess.py](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/blob/master/dataprocess.py)
+5. Run data processing code [dataprocess.py](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/blob/master/dataprocess.py)
+```
+python dataprocess.py
+```
 
 ### Models
 6. Download pretrained ViT-H base SAM model. 
