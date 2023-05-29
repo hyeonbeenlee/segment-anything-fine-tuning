@@ -1,11 +1,21 @@
 # Fine tuning the segment-anything model
-## Project for Advanced Deep Learning, Spring 2023  
+## Summary
 
-[sam_FineTune.py](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/blob/master/sam_FineTune.py) implements fine-tuning SAM mask decoder.  
+[sam_FineTune.py](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/blob/master/sam_FineTune.py) implements fine-tuning of the SAM mask decoder.  
 [sam_forward_NATIVE.py](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/blob/master/sam_forward_NATIVE.py) implements ***batched SAM forward*** using ***torch*** and ***segment-anything.modeling.sam.Sam*** class.  
-[sam_forward_SamPredictor.py](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/blob/master/sam_forward_SamPredictor.py) implements unbatched SAM forward using *segment-anything.SamPredictor* class provided by the Meta Research team.  
+[sam_forward_SamPredictor.py](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/blob/master/sam_forward_SamPredictor.py) implements unbatched SAM forward using *segment-anything.SamPredictor* class.
 
 ## Setup for the repository
+### Packages
+Refer to [requirements.txt](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/blob/master/requirements.txt) or if you're using conda environment,
+```
+conda create -n sam python=3.10
+conda activate sam
+pip install git+https://github.com/facebookresearch/segment-anything.git
+pip install opencv-python pycocotools matplotlib onnxruntime onnx numpy scipy 
+```
+and install [PyTorch.](https://pytorch.org/get-started/locally/)
+
 ### Datasets
 1. Download PASCAL VOC 2010 image dataset from here: [http://host.robots.ox.ac.uk:8080/eval/challenges/voc2010/  ](http://host.robots.ox.ac.uk/pascal/VOC/voc2010/#devkit)   
 2. Then run:
