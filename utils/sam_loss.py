@@ -9,8 +9,8 @@ class SamLoss(nn.Module):
         super().__init__()
         self.w_focal = 20
         self.w_dice = 1
-        self.w_focal = self.w_focal/(self.w_focal+self.w_dice)
-        self.w_dice = self.w_dice/(self.w_focal+self.w_dice)
+        # self.w_focal = self.w_focal/(self.w_focal+self.w_dice)
+        # self.w_dice = self.w_dice/(self.w_focal+self.w_dice)
 
     def iou_logits(self, inputs, targets):
         # For model score evaluation

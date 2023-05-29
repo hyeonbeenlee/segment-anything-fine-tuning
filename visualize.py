@@ -66,7 +66,7 @@ if __name__ == '__main__':
         checkpoint=checkpoint).to(device)  # ViT-Huge
 
     # load fine-tuned decoder
-    model_path = 'model/finetuned_decoder_epoch03_batch0021_score0.2082.pt'
+    model_path = 'model/SamLoss/finetuned_decoder_epoch10_batch0100_score0.2105.pt'
     sam_tuned = deepcopy(sam)
     sam_tuned.mask_decoder.load_state_dict(torch.load(model_path))
 
@@ -79,7 +79,7 @@ if __name__ == '__main__':
 
     shutil.rmtree(targets_path+'_predictions')
     os.makedirs(targets_path+'_predictions')
-    original_imgs = glob.glob(f'{targets_path}/*.jpg')[:100]
+    original_imgs = glob.glob(f'{targets_path}/*.jpg')[:200]
     for img in original_imgs:
         name = '.'.join(os.path.basename(img).split('.')[:-1])
         for mask_label in glob.glob(f'{targets_path}/{name}*.png'):

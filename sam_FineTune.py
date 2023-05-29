@@ -61,7 +61,7 @@ def main():
     score_train = 0
     batched_loss_train = 0
     batch_count = 0
-    for epoch in range(10):
+    for epoch in range(100):
         # training batch loop
         sam.mask_decoder.train()
         steps = 0

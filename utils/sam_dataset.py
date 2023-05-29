@@ -10,7 +10,7 @@ import random
 class SamDataset(Dataset):
     def __init__(self, path):
         random.seed(0)
-        self.original_imgs = glob.glob(f'{path}/*.jpg')[:200]
+        self.original_imgs = glob.glob(f'{path}/*.jpg')[:300]
         self.path = path
         self.images = []
         self.mask_labels = []
