@@ -41,12 +41,9 @@ def plot_mask(img_path, mask_label_path):
         f'{targets_path}_predictions/{os.path.basename(mask_label_path)}')
     plt.close('all')
 
-def moving_average(x, w):
-    return np.convolve(x, np.ones(w), 'valid') / w
-
 def plot_log():
     loss_history = sam_tuned_log['loss_train']
-    score_history = moving_average(np.array(sam_tuned_log['scores_train'])*100,4)
+    score_history = np.array(sam_tuned_log['scores_train'])*100
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
     ax[0].plot(loss_history, color='k')
     ax[0].set_yscale('log')
@@ -64,8 +61,8 @@ def plot_log():
 
 
 def plot_predictions():
-    shutil.rmtree(targets_path+'_predictions')
-    os.makedirs(targets_path+'_predictions')
+    shutil.rmtree(targets_path+'_predictions', ignore_errors=True)
+    os.makedirs(targets_path+'_predictions', exist_ok=True)
     original_imgs = glob.glob(f'{targets_path}/*.jpg')[:200]
     for img in original_imgs:
         name = '.'.join(os.path.basename(img).split('.')[:-1])
@@ -79,7 +76,7 @@ def plot_predictions():
 def compute_miou():
     from utils.sam_loss import SamLoss
     metric = SamLoss()
-    total_annotations = len(glob.glob(f'{targets_path}/*.png'))
+    total_annotations = len(glob.glob(f'{targets_path}/*.png'))-len(glob.glob(f'{targets_path}/*.jpg'))
     print(f"Computing IoU scores on {targets_path}")
 
     scores = []
@@ -105,7 +102,7 @@ def compute_miou():
                 # evaluate
                 score = metric.iou_logits(mask, mask_label)
                 # score_tuned = metric.iou_logits(mask_tuned, mask_label)
-                scores.append(score)
+                scores.append(scoretm)
                 # scores_tuned.append(score_tuned)
                 count+=1
                 print(
@@ -125,7 +122,7 @@ if __name__ == '__main__':
         checkpoint=checkpoint).to(device)  # ViT-Huge
 
     # load fine-tuned decoder
-    model_path = 'model/SamLoss300/finetuned_decoder_epoch09_batch0117_score0.1610.pt'
+    model_path = 'model/finetuned_decoder_epoch03_batch0169_score0.3561.pt'
     sam_tuned = deepcopy(sam)
     sam_tuned.mask_decoder.load_state_dict(torch.load(model_path))
     sam_tuned_log = torch.load(model_path+'log')
@@ -140,5 +137,5 @@ if __name__ == '__main__':
     plot_template()
     plot_log()
     # quit()
-    # plot_predictions(model_path)
+    plot_predictions()
     # compute_miou()

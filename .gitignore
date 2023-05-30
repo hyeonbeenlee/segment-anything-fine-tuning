@@ -6,10 +6,6 @@
 model/
 
 
-data/*
-images/**/*.png
-images/**/*.jpg
-!images/train/2008_000008.jpg
-!images/train/2008_000008-person-luarm.png
-!images/train/2010_006079.jpg
-!images/train/2010_006079-person-hair.png
+data
+images_old
+images
