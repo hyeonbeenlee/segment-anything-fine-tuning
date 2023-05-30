@@ -95,7 +95,7 @@ def compute_miou():
                 #     sam_tuned, img, mask_label, multimask_output=False)
             # logits
             mask_label=mask_label.type(torch.bool)
-            mask=(mask > sam_tuned.mask_threshold).cpu()
+            mask=(mask > sam.mask_threshold).cpu()
             # mask_tuned=(mask_tuned > sam_tuned.mask_threshold).cpu()
             # evaluate
             score = metric.iou_logits(mask, mask_label)
@@ -120,7 +120,7 @@ if __name__ == '__main__':
         checkpoint=checkpoint).to(device)  # ViT-Huge
 
     # load fine-tuned decoder
-    model_path = 'model/finetuned_decoder_epoch08_batch0104_score0.4295.pt'
+    model_path = 'model/SamLoss300/finetuned_decoder_epoch09_batch0117_score0.1610.pt'
     sam_tuned = deepcopy(sam)
     sam_tuned.mask_decoder.load_state_dict(torch.load(model_path))
     sam_tuned_log = torch.load(model_path+'log')

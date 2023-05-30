@@ -71,14 +71,14 @@ def main():
             mask_label = mask_label.to(device)
             # forward
             masks, iou_predictions, low_res_masks = SamForward(sam,
-                                                               img_label, mask_label, return_logits=False, multimask_output=False)  # take only coarse mask
+                                                               img_label, mask_label)  # take only coarse mask
             # compute loss and grad
             loss = loss_fn(masks[:, 0, ...], mask_label, iou_predictions)
             loss /= steps_max
             loss.backward()
             batched_loss_train += loss.item()
             steps += 1
-            # evaluate scores
+            # evaluate scores with logits
             with torch.no_grad():
                 mask_label_logits = mask_label.type(torch.bool)
                 mask_pred_logits = masks > sam.mask_threshold
