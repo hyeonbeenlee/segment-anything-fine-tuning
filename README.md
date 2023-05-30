@@ -28,8 +28,8 @@ cd segment-anything-fine-tuning
 ```
 3. Download PASCAL VOC 2010 train/val/test datasets.
 ```
-wget http://host.robots.ox.ac.uk/pascal/VOC/voc2010/VOCtrainval_03-May-2010.tar #train/validation
-wget http://host.robots.ox.ac.uk:8080/eval/downloads/VOC2010test.tar #test
+wget http://host.robots.ox.ac.uk/pascal/VOC/voc2010/VOCtrainval_03-May-2010.tar
+wget http://host.robots.ox.ac.uk:8080/eval/downloads/VOC2010test.tar
 mkdir -p data/trainval
 mkdir -p data/test
 tar xvf VOCtrainval_03-May-2010.tar -C data/trainval
@@ -58,7 +58,8 @@ mv sam_vit_h_4b8939.pth model
 Now you're good to go!
 
 ## Misc.
-Coded based on https://github.com/facebookresearch/segment-anything with minimal changes
+Coded based on https://github.com/facebookresearch/segment-anything with minimal changes.
 
-The pretrained SAM mask decoder is fine tuned to PASCAL VOC 2010 person-part segmentation task.  
 A random single-pixel is sampled from the annotation label and prompted to the prompt encoder.
+
+IoU predictions are minimized optimized but not handled.

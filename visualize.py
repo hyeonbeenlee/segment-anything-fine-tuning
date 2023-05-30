@@ -41,21 +41,25 @@ def plot_mask(img_path, mask_label_path):
         f'{targets_path}_predictions/{os.path.basename(mask_label_path)}')
     plt.close('all')
 
+def moving_average(x, w):
+    return np.convolve(x, np.ones(w), 'valid') / w
 
 def plot_log():
     loss_history = sam_tuned_log['loss_train']
-    score_history = sam_tuned_log['scores_train']
+    score_history = moving_average(np.array(sam_tuned_log['scores_train'])*100,4)
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    ax[0].plot(loss_history)
-    # ax[0].set_yscale('log')
+    ax[0].plot(loss_history, color='k')
+    ax[0].set_yscale('log')
     ax[0].set_xlabel('Batch updates')
     ax[0].set_ylabel('Loss')
-    ax[1].plot(score_history)
-    ax[1].set_ylim(0, 1)
+    ax[1].plot(score_history, color='k')
+    ax[1].hlines(72.82, xmin=0, xmax=len(score_history)-1, color='red', linestyle='--', label='SOTA')
+    ax[1].set_ylim(0, 100)
     ax[1].set_xlabel('Batch updates')
-    ax[1].set_ylabel('IoU score')
+    ax[1].set_ylabel('mIoU score')
+    ax[1].legend(loc=2)
     fig.tight_layout()
-    fig.savefig('test_log.png')
+    fig.savefig('test_log.png',dpi=200)
     plt.close('all')
 
 
@@ -85,28 +89,29 @@ def compute_miou():
         img = loadimg(i)
         name_img = '.'.join(os.path.basename(i).split('.')[:-1])
         for m in glob.glob(f'{targets_path}/{name_img}*.png'):
-            # load mask
-            mask_label = loadmask(m)
-            # forward
-            with torch.no_grad():
-                mask, _, __ = SamForward(
-                    sam, img, mask_label, multimask_output=False)
-                # mask_tuned, _, __ = SamForward(
-                #     sam_tuned, img, mask_label, multimask_output=False)
-            # logits
-            mask_label=mask_label.type(torch.bool)
-            mask=(mask > sam_tuned.mask_threshold).cpu()
-            # mask_tuned=(mask_tuned > sam_tuned.mask_threshold).cpu()
-            # evaluate
-            score = metric.iou_logits(mask, mask_label)
-            # score_tuned = metric.iou_logits(mask_tuned, mask_label)
-            scores.append(score)
-            # scores_tuned.append(score_tuned)
-            count+=1
-            print(
-                f"{count}/{total_annotations}: {score.item():.6f}")
-            # print(
-                # f"{count}/{total_annotations}: {score.item():.6f}, {score_tuned.item():.6f}")
+            if len(os.path.basename(m).split('-')) >= 3:
+                # load mask
+                mask_label = loadmask(m)
+                # forward
+                with torch.no_grad():
+                    mask, _, __ = SamForward(
+                        sam, img, mask_label, multimask_output=False)
+                    # mask_tuned, _, __ = SamForward(
+                    #     sam_tuned, img, mask_label, multimask_output=False)
+                # logits
+                mask_label=mask_label.type(torch.bool)
+                mask=(mask > sam.mask_threshold).cpu()
+                # mask_tuned=(mask_tuned > sam_tuned.mask_threshold).cpu()
+                # evaluate
+                score = metric.iou_logits(mask, mask_label)
+                # score_tuned = metric.iou_logits(mask_tuned, mask_label)
+                scores.append(score)
+                # scores_tuned.append(score_tuned)
+                count+=1
+                print(
+                    f"{count}/{total_annotations}: {score.item():.6f}")
+                # print(
+                    # f"{count}/{total_annotations}: {score.item():.6f}, {score_tuned.item():.6f}")
     print()
     print(f"Original SAM: {torch.cat(scores).mean()}")
     # print(f"Fine-tuned SAM: {torch.cat(scores_tuned).mean()}")
@@ -120,7 +125,7 @@ if __name__ == '__main__':
         checkpoint=checkpoint).to(device)  # ViT-Huge
 
     # load fine-tuned decoder
-    model_path = 'model/finetuned_decoder_epoch08_batch0104_score0.4295.pt'
+    model_path = 'model/SamLoss300/finetuned_decoder_epoch09_batch0117_score0.1610.pt'
     sam_tuned = deepcopy(sam)
     sam_tuned.mask_decoder.load_state_dict(torch.load(model_path))
     sam_tuned_log = torch.load(model_path+'log')
@@ -132,8 +137,8 @@ if __name__ == '__main__':
     targets_path = 'images/val'
 
     # plot
-    # plot_template()
-    # plot_log()
+    plot_template()
+    plot_log()
     # quit()
     # plot_predictions(model_path)
-    compute_miou()
+    # compute_miou()
