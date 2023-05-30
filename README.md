@@ -1,4 +1,4 @@
-# Fine tuning the Segment Anything Model(SAM)
+# Fine tuning the Segment Anything Model (SAM)
 ## Summary
 ### This is a project repository for ***2023 spring semester Advanced Deep Learning***, Kyunghee University.  
 ### Team members: Hyeonbeen Lee, Keon-Oh Kim, Ji-Hyun Lee, Young-Hoon Cha  
