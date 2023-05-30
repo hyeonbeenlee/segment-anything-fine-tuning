@@ -275,12 +275,12 @@ if __name__ == '__main__':
     # plot
     os.makedirs('ppt_imgs', exist_ok=True)
     plot_template()
-    plot_log()
+    # plot_log()
     # plot_mask_labels()
     # plot_cropped_image()
     # plot_for_fun()
     
-    plot_predictions()
+    # plot_predictions()
     
     # compute_miou(sam)
-    # compute_miou(sam_tuned)
+    compute_miou(sam_tuned)
