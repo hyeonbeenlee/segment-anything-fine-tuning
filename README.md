@@ -2,12 +2,14 @@
 ## Summary
 ### This is a project repository for ***2023 spring semester Advanced Deep Learning***, Kyunghee University.  
 ### Team members: Hyeonbeen Lee, Keon-Oh Kim, Ji-Hyun Lee, Young-Hoon Cha  
-![Screenshot 2023-05-31 052547](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/assets/78078652/7b137fdc-88b2-4711-b4db-7c37cd031690)  
+
+
+![Screenshot 2023-05-31 060303](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/assets/78078652/084b7b4a-0be1-4592-9d7a-e502a8790bd7)  
 ![finetune](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/assets/78078652/f7552bbd-3f5f-44df-81f8-83fddd7f7e9f)
 
 [sam_FineTune.py](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/blob/master/sam_FineTune.py) implements fine-tuning of the SAM mask decoder.  
 [sam_forward.py](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/blob/master/utils/sam_forward.py) implements ***batched SAM forward*** using ```torch``` and ```segment-anything.modeling.sam.Sam``` class.  
-[sam_forward_SamPredictor.py](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/blob/master/sam_forward_SamPredictor.py) implements unbatched SAM forward using ```segment-anything.SamPredictor``` class.  
+[sam_forward_SamPredictor.py](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/blob/master/tmp/sam_forward_SamPredictor.py) implements unbatched SAM forward using ```segment-anything.SamPredictor``` class.  
 [visualize.py](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/blob/master/visualize.py) visualizes mask labels, SAM mask predictions, and fine-tuned SAM mask predictions.
 
 A random single-pixel is sampled from the annotation label and prompted to the prompt encoder in ```utils.sam_forward.SamForward```
