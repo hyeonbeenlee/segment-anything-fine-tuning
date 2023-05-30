@@ -64,7 +64,6 @@ def main():
     for epoch in range(100):
         # training batch loop
         sam.mask_decoder.train()
-        steps = 0
         for idx, batch in enumerate(train_dataloader):
             img_label, mask_label = batch
             img_label = img_label.to(device)
@@ -84,7 +83,7 @@ def main():
                 mask_pred_logits = masks > sam.mask_threshold
                 score_train += SamLoss().iou_logits(mask_pred_logits, mask_label_logits).item()/steps_max
             # update acuumulated grads
-            if steps == steps_max or idx == len(train_dataloader)-1:
+            if steps == steps_max:
                 print(
                     f"Epoch {epoch+1}, stepping at batch {idx+1}/{len(train_dataloader)}, mIoU score={score_train:.5f}, loss={batched_loss_train:.5f}")
                 # record score log
