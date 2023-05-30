@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-def SamForward(sam: Sam, img: torch.FloatTensor, mask_label: torch.FloatTensor, return_logits: bool = False, numpy: bool = False, multimask_output: bool = False, device='cuda', return_prompt: bool = False) -> torch.FloatTensor:
+def SamForward(sam: Sam, img: torch.FloatTensor, mask_label: torch.FloatTensor, return_logits: bool = False, numpy: bool = False, multimask_output: bool = False, device='cuda', return_prompt: bool = False, num_points: int = 1) -> torch.FloatTensor:
     """
     Prompt inputs are generated from a single pixel from mask label.
 
@@ -17,6 +17,7 @@ def SamForward(sam: Sam, img: torch.FloatTensor, mask_label: torch.FloatTensor, 
         numpy(bool, optional): If true, predicted masks are converted to CPU NumPy arrays.
         multimask_output(bool, optional): If true, output masks are three masks with different resolutions. If false, output masks are single mask with the same resolution as input image (the first, coarse mask returned only).
         return_prompt(bool, optional): Returns randomly sampled prompt input if true
+        num_points(int, optional): Number of randomly sampled prompt points from mask label. Defaults to 1.
 
     Returns:
         masks': (torch.Tensor) Batched binary mask predictions,
@@ -50,7 +51,7 @@ def SamForward(sam: Sam, img: torch.FloatTensor, mask_label: torch.FloatTensor, 
             prompt_points.append(prompt_point)
         prompt_points = torch.stack(prompt_points, dim=0).to(device)
         # foreground ones, background zeros
-        point_labels = torch.ones(batch_size).reshape(-1, 1).to(device)
+        point_labels = torch.ones((batch_size, num_points)).to(device)
         sparse_embeddings, dense_embeddings = sam.prompt_encoder(
             # (N,n,2) n=number of points in a single img
             points=(apply_coords(prompt_points,
