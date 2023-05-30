@@ -58,7 +58,8 @@ mv sam_vit_h_4b8939.pth model
 Now you're good to go!
 
 ## Misc.
-Coded based on https://github.com/facebookresearch/segment-anything with minimal changes
+Coded based on https://github.com/facebookresearch/segment-anything with minimal changes.
 
-The pretrained SAM mask decoder is fine tuned to PASCAL VOC 2010 person-part segmentation task.  
 A random single-pixel is sampled from the annotation label and prompted to the prompt encoder.
+
+IoU predictions are minimized optimized but not handled.
