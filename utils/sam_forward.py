@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-def SamForward(sam: Sam, img: torch.FloatTensor, mask_label: torch.FloatTensor, return_logits: bool = False, numpy: bool = False, multimask_output: bool = False, device='cuda', return_prompt: bool = False, num_points: int = 1) -> torch.FloatTensor:
+def SamForward(sam: Sam, img: torch.FloatTensor, mask_label: torch.FloatTensor=None, return_logits: bool = False, numpy: bool = False, multimask_output: bool = False, device='cuda', return_prompt: bool = False, num_points: int = 1, prompt_points:bool=None) -> torch.FloatTensor:
     """
     Prompt inputs are generated from a single pixel from mask label.
 
@@ -39,17 +39,20 @@ def SamForward(sam: Sam, img: torch.FloatTensor, mask_label: torch.FloatTensor, 
         image_embeddings = sam.image_encoder(input_image)
 
         # 2. Create a random point prompt from mask_label and Prompt Encoder Forward
-        prompt_points = []
-        for i in range(batch_size):
-            prompt_point_indices = torch.argwhere(mask_label[i] == 1)
-            num_points = 1
-            sampled_indices = torch.randint(
-                prompt_point_indices.shape[0], size=(num_points,))
-            # convert (H,W) =  (y,x) -> (x,y)
-            prompt_point = torch.flip(
-                prompt_point_indices[sampled_indices], (1,))
-            prompt_points.append(prompt_point)
-        prompt_points = torch.stack(prompt_points, dim=0).to(device)
+        if mask_label is not None:
+            prompt_points = []
+            for i in range(batch_size):
+                prompt_point_indices = torch.argwhere(mask_label[i] == 1)
+                num_points = 1
+                sampled_indices = torch.randint(
+                    prompt_point_indices.shape[0], size=(num_points,))
+                # convert (H,W) =  (y,x) -> (x,y)
+                prompt_point = torch.flip(
+                    prompt_point_indices[sampled_indices], (1,))
+                prompt_points.append(prompt_point)
+            prompt_points = torch.stack(prompt_points, dim=0).to(device)
+        else:
+            assert prompt_points is not None, "Either mask_label or prompt_input must be provided."
         # foreground ones, background zeros
         point_labels = torch.ones((batch_size, num_points)).to(device)
         sparse_embeddings, dense_embeddings = sam.prompt_encoder(

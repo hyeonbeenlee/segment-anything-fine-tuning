@@ -1,20 +1,13 @@
 from segment_anything import sam_model_registry
-from segment_anything.modeling.sam import Sam
 from utils.functions import *
-import glob
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import matplotlib.pyplot as plt
 from torch.utils.data import Dataset, DataLoader
-import os
-import multiprocessing as mp
-from torchvision.transforms import CenterCrop
 from utils.sam_loss import SamLoss
 from utils.sam_dataset import SamDataset
 from utils.sam_forward import SamForward
-import random
+import time
 
 
 def main():
