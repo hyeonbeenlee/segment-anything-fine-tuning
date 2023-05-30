@@ -64,6 +64,5 @@ mv sam_vit_h_4b8939.pth model
 Now you're good to go!
 
 ## Misc.
-Coded based on https://github.com/facebookresearch/segment-anything with minimal changes.
-
-IoU predictions are optimized but not handled in this repo.
+Coded based on https://github.com/facebookresearch/segment-anything with minimal changes.  
+Thanks to @zuck
