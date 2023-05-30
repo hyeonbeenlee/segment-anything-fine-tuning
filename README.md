@@ -1,7 +1,8 @@
-# Fine tuning the segment-anything model
+# Fine tuning the Segment Anything Model(SAM)
 ## Summary
 ### This is a project repository for ***2023 spring semester Advanced Deep Learning***, Kyunghee University.  
 ### Team members: Hyeonbeen Lee, Keon-Oh Kim, Ji-Hyun Lee, Young-Hoon Cha  
+![Screenshot 2023-05-31 052547](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/assets/78078652/7b137fdc-88b2-4711-b4db-7c37cd031690)  
 ![finetune](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/assets/78078652/f7552bbd-3f5f-44df-81f8-83fddd7f7e9f)
 
 [sam_FineTune.py](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/blob/master/sam_FineTune.py) implements fine-tuning of the SAM mask decoder.  
