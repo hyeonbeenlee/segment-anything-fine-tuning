@@ -48,12 +48,23 @@ class SamDataset(Dataset):
         for img in original_imgs:
             name_file = os.path.basename(img).split('.')[0]
             for mask in glob.glob(f"{self.path}/{name_file}*.png"):
+                exit_flag = False
                 # filename + person + subcls: coarse only
                 if len(os.path.basename(mask).split('-')) >= 3:
-                    self.images.append(self.transform(loadimg(img)))
-                    self.mask_labels.append(self.transform(loadmask(mask)))
-                    count += 1
-                    print(f'PID {os.getpid()} loaded {count} images: {mask}')
+                    for key in ['hair', 'ear', 'eye', 'ebrow', 'mouth', 'nose']:  # DO NOT LOAD
+                        if key in mask:
+                            exit_flag = True
+                            break
+                        else:
+                            continue
+                    if exit_flag:
+                        continue
+                    else:
+                        self.images.append(self.transform(loadimg(img)))
+                        self.mask_labels.append(self.transform(loadmask(mask)))
+                        count += 1
+                        print(
+                            f'PID {os.getpid()} loaded {count} images: {mask}')
 
     def transform(self, image):
         if len(image.shape) == 4:  # NHWC

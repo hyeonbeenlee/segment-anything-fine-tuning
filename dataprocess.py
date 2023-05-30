@@ -24,10 +24,18 @@ def xml_parse():
 
 
 def loadanno(path):
-    trains=open('data/trainval/VOCdevkit/VOC2010/ImageSets/Main/train.txt')
-    vals=open('data/trainval/VOCdevkit/VOC2010/ImageSets/Main/val.txt')
-    trains=[f.replace('\n','') for f in trains.readlines()]
-    vals=[f.replace('\n','') for f in vals.readlines()]
+    train_list=open('data/trainval/VOCdevkit/VOC2010/ImageSets/Main/person_train.txt')
+    val_list=open('data/trainval/VOCdevkit/VOC2010/ImageSets/Main/person_val.txt')
+    trains=[]
+    vals=[]
+    for f in train_list.readlines():
+        f=f.replace('\n','')
+        if f.split()[1]=='1':
+            trains.append(f.split(' ')[0])
+    for f in val_list.readlines():
+        f=f.replace('\n','')
+        if f.split()[1]=='1':
+            vals.append(f.split(' ')[0])
     
     
     file = loadmat(path)['anno']
@@ -36,29 +44,22 @@ def loadanno(path):
     data_file = file[0][0][1]
     if name_file in trains:dsettype='train'
     elif name_file in vals:dsettype='val'
-    else:dsettype='none'
+    else:return
 
     # cls level
-    name_cls = data_file[0][0][0].item()  # person
-    if name_cls != 'person':
-        return None # cls: person only
-    idx_cls = data_file[0][0][1].item()
-    mask_cls = data_file[0][0][2]
-    data_cls = data_file[0][0][3]
+    for d in data_file[0]:
+        if d[0]=='person':
+            name_cls=d[0].item()
+            idx_cls=d[1].item()
+            mask_cls=d[2]
+            data_cls=d[3]
+    if 'name_cls' not in locals().keys():return
 
     # subcls level
     if data_cls.shape[0]:
         name_subcls = [data_cls[0][i][0].item() for i in range(
             len(data_cls[0]))]  # ['head', 'lear', 'leye', 'reye', ...]
         mask_subcls = [data_cls[0][i][1] for i in range(len(data_cls[0]))]
-
-    # print process
-    vars = deepcopy(locals())
-    print(f"{name_file}")
-    for k in vars.keys():
-        if 'name' in k and 'cls' in k:
-            print(f"{k}: {vars[k]}")
-    print()
     
     # copy original image
     os.makedirs(f'images/{dsettype}', exist_ok=True)
@@ -70,13 +71,15 @@ def loadanno(path):
     # visualize cls/subcls and save
     masks_to_show = [mask_cls]
     masks_to_show = masks_to_show + \
-        mask_subcls if 'mask_subcls' in vars.keys() else masks_to_show
+        mask_subcls if 'mask_subcls' in locals().keys() else masks_to_show
     masks_keys = [name_cls]
     masks_keys = masks_keys + \
-        [f"{name_cls}-{n}" for n in name_subcls] if 'name_subcls' in vars.keys() else masks_keys
+        [f"{name_cls}-{n}" for n in name_subcls] if 'name_subcls' in locals().keys() else masks_keys      
+    
     for j, mask in enumerate(masks_to_show):
         name_image = f"{name_file}-{masks_keys[j]}"
         cv2.imwrite(f"{destination}/{dsettype}/{name_image}.png", mask*255)
+        print(f"PID {os.getpid()} saved {destination}/{dsettype}/{name_image}.png")
     
 def process():
     annotation_files = glob.glob('data/annotations/Annotations_Part/*.mat')
@@ -89,7 +92,8 @@ def process():
 
 if __name__ == "__main__":
     # Sinlge processing
-    # loadanno(glob.glob('data/annotations/Annotations_Part/*.mat'))
+    # for m in glob.glob('data/annotations/Annotations_Part/*.mat'):
+        # loadanno(m)
     
     # Multiprocessing
     process()
