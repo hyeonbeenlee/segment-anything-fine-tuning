@@ -82,7 +82,7 @@ def main():
             with torch.no_grad():
                 mask_label_logits = mask_label.type(torch.bool)
                 mask_pred_logits = masks > sam.mask_threshold
-                score_train = SamLoss().iou_logits(mask_pred_logits, mask_label_logits).item()
+                score_train += SamLoss().iou_logits(mask_pred_logits, mask_label_logits).item()/steps_max
             # update acuumulated grads
             if steps == steps_max or idx == len(train_dataloader)-1:
                 print(
