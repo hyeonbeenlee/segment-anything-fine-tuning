@@ -1,11 +1,12 @@
 ._.DS_Store
 .DS_Store
 **/__pycache__/**
-
 *.HEIC
-model/
 
-
+model/*
 data
 images_old
 images
+
+!model/finetuned_decoder_epoch04_batch0217_score0.5006.pt
+!model/finetuned_decoder_epoch04_batch0217_score0.5006.ptlog
