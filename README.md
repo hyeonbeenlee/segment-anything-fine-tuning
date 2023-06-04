@@ -4,7 +4,8 @@
 ### Team members: Hyeonbeen Lee, Keon-Oh Kim, Ji-Hyun Lee, Young-Hoon Cha  
 
 
-![Screenshot 2023-05-31 060303](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/assets/78078652/084b7b4a-0be1-4592-9d7a-e502a8790bd7)  
+![Screenshot 2023-05-31 060303](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/assets/78078652/084b7b4a-0be1-4592-9d7a-e502a8790bd7) 
+![image](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/assets/78078652/7d2e1c28-a0df-4255-8d36-7678170263b1)  
 ![finetune](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/assets/78078652/f7552bbd-3f5f-44df-81f8-83fddd7f7e9f)
 
 [sam_FineTune.py](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/blob/master/sam_FineTune.py) implements fine-tuning of the SAM mask decoder.  
