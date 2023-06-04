@@ -1,7 +1,6 @@
 # Fine-tuning the Segment Anything Model (SAM)
 ## Summary
 ### This is a project repository for ***2023 spring semester Advanced Deep Learning***, Kyunghee University.  
-### Team members: Hyeonbeen Lee, Keon-Oh Kim, Ji-Hyun Lee, Young-Hoon Cha  
 
 
 ![Screenshot 2023-05-31 060303](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/assets/78078652/084b7b4a-0be1-4592-9d7a-e502a8790bd7) 
