@@ -34,8 +34,8 @@ cd segment-anything-fine-tuning
 ```
 3. Download PASCAL VOC 2010 train/val/test datasets.
 ```
-wget http://host.robots.ox.ac.uk/pascal/VOC/voc2010/VOCtrainval_03-May-2010.tar
-wget http://host.robots.ox.ac.uk:8080/eval/downloads/VOC2010test.tar
+curl -O http://host.robots.ox.ac.uk/pascal/VOC/voc2010/VOCtrainval_03-May-2010.tar
+curl -O http://host.robots.ox.ac.uk:8080/eval/downloads/VOC2010test.tar
 mkdir -p data/trainval
 mkdir -p data/test
 tar xvf VOCtrainval_03-May-2010.tar -C data/trainval
@@ -45,7 +45,7 @@ tar xvf VOC2010test.tar -C data/test
 
 4. Download PASCAL-Part annotations.
 ```
-wget http://roozbehm.info/pascal-parts/trainval.tar.gz
+curl -O http://roozbehm.info/pascal-parts/trainval.tar.gz
 mkdir -p data/annotations
 tar xvzf trainval.tar.gz -C data/annotations  
 ```
@@ -57,7 +57,7 @@ python dataprocess.py
 ### Models
 6. Download pretrained ViT-H base SAM model. 
 ```
-wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
+curl -O https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
 mkdir model
 mv sam_vit_h_4b8939.pth model
 ```
