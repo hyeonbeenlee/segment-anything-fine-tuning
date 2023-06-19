@@ -2,7 +2,10 @@
 ## Summary
 ### This is a project repository for ***2023 spring semester Advanced Deep Learning***, Kyunghee University.  
 
-We fine-tune the [Segment Anything Model](https://github.com/facebookresearch/segment-anything) for human part segmentation task, to let collaborative robots safely recognize human objects.
+We fine-tune the [Segment Anything Model](https://github.com/facebookresearch/segment-anything) for human part segmentation task.  
+The research is proposed mainly for two aspects: 
+1. Evaluation of SAM on downstream tasks as the first pretrained model for computer vision tasks.
+2. Using the fine-tuned model, let collaborative robots recognize human parts and operate safely.
 
 ![Screenshot 2023-05-31 060303](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/assets/78078652/084b7b4a-0be1-4592-9d7a-e502a8790bd7) 
 ![image](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/assets/78078652/7d2e1c28-a0df-4255-8d36-7678170263b1)  
