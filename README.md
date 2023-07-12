@@ -80,7 +80,7 @@ Temporarily using unit-sized batch gradient accumulation
 1. Layerwise LR decay of 0.8
 2. Drop-path with rate of 0.4
 3. Decreasing LR with factor of 10 at iteration 60000, 86666...
-4. The code trains **the first mask output** only, therefore the last two mask outputs of multi-mask outputs are not considered.
+4. The code trains **the first mask output** only, therefore the last two mask outputs of multi-mask outputs are wasted.
 
 
 
