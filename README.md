@@ -67,6 +67,22 @@ mv sam_vit_h_4b8939.pth model
 ```
 Now you're good to go!
 
+## Existing Issues
+### Errors
+1. Batch size more than 1 cause error (due to multi-prompt)  
+https://github.com/facebookresearch/segment-anything/issues/277
+Temporarily using unit-sized batch gradient accumulation
+2. Loss function(Focal+Dice) is not strictly validated, but the training looks fine in running.
+3. Multiprocessing image loading not properly working
+4. Custom dataset not implemented, which will load the entire training data to system memory at once (~300 GB)
+
+### Not Implemented
+1. Layerwise LR decay of 0.8 not properly implemented
+2. Drop-path with rate of 0.4 not implemented
+3. Decreasing LR with factor of 10 at iteration 60000, 86666...not considered
+
+
+
 ## Misc.
 Coded based on https://github.com/facebookresearch/segment-anything with minimal changes.  
 Thanks to @zuck
