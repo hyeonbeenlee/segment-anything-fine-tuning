@@ -77,9 +77,9 @@ Temporarily using unit-sized batch gradient accumulation
 4. <del>Custom dataset not implemented, which will load the entire training data to system memory at once (~300 GB).</del> Fixed at Jul 12th 2023.
 
 ### Not Implemented
-1. Layerwise LR decay of 0.8 not properly implemented
-2. Drop-path with rate of 0.4 not implemented
-3. Decreasing LR with factor of 10 at iteration 60000, 86666...not considered
+1. Layerwise LR decay of 0.8
+2. Drop-path with rate of 0.4
+3. Decreasing LR with factor of 10 at iteration 60000, 86666...
 4. The code trains **the first mask output** only, therefore the last two mask outputs of multi-mask outputs are not considered.
 
 
