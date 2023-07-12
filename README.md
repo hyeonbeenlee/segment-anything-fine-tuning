@@ -70,11 +70,11 @@ Now you're good to go!
 ## Existing Issues
 ### Errors
 1. Batch size more than 1 cause error (due to multi-prompt)  
-https://github.com/facebookresearch/segment-anything/issues/277
+https://github.com/facebookresearch/segment-anything/issues/277d
 Temporarily using unit-sized batch gradient accumulation
 2. Loss function(Focal+Dice) is not strictly validated, but the training looks fine in running.
 3. Multiprocessing image loading not properly working
-4. Custom dataset not implemented, which will load the entire training data to system memory at once (~300 GB)
+4. Custom dataset not implemented, which will load the entire training data to system memory at once (~300 GB).
 
 ### Not Implemented
 1. Layerwise LR decay of 0.8 not properly implemented
