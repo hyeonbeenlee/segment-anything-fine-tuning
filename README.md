@@ -1,10 +1,14 @@
 # Fine-tuning the Segment Anything Model (SAM)
 ## Summary
 ### This is a project repository for ***2023 spring semester Advanced Deep Learning***, Kyunghee University.  
-### Team members: Hyeonbeen Lee, Keon-Oh Kim, Ji-Hyun Lee, Young-Hoon Cha  
 
+We fine-tune the [Segment Anything Model](https://github.com/facebookresearch/segment-anything) for human part segmentation task.  
+The research is proposed mainly for two aspects: 
+1. Evaluation of SAM on downstream tasks as the first foundation model for segmentation tasks.
+2. Using the fine-tuned model, let collaborative robots recognize human parts and operate safely (future works).
 
-![Screenshot 2023-05-31 060303](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/assets/78078652/084b7b4a-0be1-4592-9d7a-e502a8790bd7)  
+![Screenshot 2023-05-31 060303](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/assets/78078652/084b7b4a-0be1-4592-9d7a-e502a8790bd7) 
+![image](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/assets/78078652/7d2e1c28-a0df-4255-8d36-7678170263b1)  
 ![finetune](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/assets/78078652/f7552bbd-3f5f-44df-81f8-83fddd7f7e9f)
 
 [sam_FineTune.py](https://github.com/hyeonbeenlee/segment-anything-fine-tuning/blob/master/sam_FineTune.py) implements fine-tuning of the SAM mask decoder.  
@@ -34,8 +38,8 @@ cd segment-anything-fine-tuning
 ```
 3. Download PASCAL VOC 2010 train/val/test datasets.
 ```
-wget http://host.robots.ox.ac.uk/pascal/VOC/voc2010/VOCtrainval_03-May-2010.tar
-wget http://host.robots.ox.ac.uk:8080/eval/downloads/VOC2010test.tar
+curl -O http://host.robots.ox.ac.uk/pascal/VOC/voc2010/VOCtrainval_03-May-2010.tar
+curl -O http://host.robots.ox.ac.uk:8080/eval/downloads/VOC2010test.tar
 mkdir -p data/trainval
 mkdir -p data/test
 tar xvf VOCtrainval_03-May-2010.tar -C data/trainval
@@ -45,7 +49,7 @@ tar xvf VOC2010test.tar -C data/test
 
 4. Download PASCAL-Part annotations.
 ```
-wget http://roozbehm.info/pascal-parts/trainval.tar.gz
+curl -O http://roozbehm.info/pascal-parts/trainval.tar.gz
 mkdir -p data/annotations
 tar xvzf trainval.tar.gz -C data/annotations  
 ```
@@ -57,11 +61,27 @@ python dataprocess.py
 ### Models
 6. Download pretrained ViT-H base SAM model. 
 ```
-wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
+curl -O https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
 mkdir model
 mv sam_vit_h_4b8939.pth model
 ```
 Now you're good to go!
+
+## Existing Issues
+### Errors
+1. Batch size more than 1 cause error (due to multi-prompt)  
+https://github.com/facebookresearch/segment-anything/issues/277d
+Temporarily using unit-sized batch gradient accumulation
+2. Loss function(Focal+Dice) is not strictly validated, but the training looks fine in running.
+3. Multiprocessing image loading not properly working
+4. Custom dataset not implemented, which will load the entire training data to system memory at once (~300 GB).
+
+### Not Implemented
+1. Layerwise LR decay of 0.8 not properly implemented
+2. Drop-path with rate of 0.4 not implemented
+3. Decreasing LR with factor of 10 at iteration 60000, 86666...not considered
+
+
 
 ## Misc.
 Coded based on https://github.com/facebookresearch/segment-anything with minimal changes.  
