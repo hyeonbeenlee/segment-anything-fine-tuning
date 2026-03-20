@@ -1,6 +1,6 @@
 # Fine-tuning the Segment Anything Model (SAM)
 ## Summary
-### This is a project repository for ***2023 spring semester Advanced Deep Learning***, Kyunghee University.  
+### This is a project repository for ***2023 spring semester Advanced Deep Learning***, Kyung Hee University.  
 
 We fine-tune the [Segment Anything Model](https://github.com/facebookresearch/segment-anything) for human part segmentation task.  
 The research is proposed mainly for two aspects: 
